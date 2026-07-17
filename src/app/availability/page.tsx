@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { getPublicAvailabilitySlots } from "@/infrastructure/supabase/publicData";
@@ -99,6 +100,22 @@ export default async function AvailabilityPage() {
                       <p className="mt-2 text-xs uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
                         Tersedia
                       </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {slot.services.map((service) => (
+                          <span
+                            key={`${slot.id}-${service.id}`}
+                            className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                          >
+                            {service.name}
+                          </span>
+                        ))}
+                      </div>
+                      <Link
+                        href={`/book?slotId=${slot.id}`}
+                        className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+                      >
+                        Booking slot ini
+                      </Link>
                     </article>
                   ))}
                 </div>

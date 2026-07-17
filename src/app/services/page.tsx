@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { getPublicServices } from "@/infrastructure/supabase/publicData";
@@ -61,11 +62,35 @@ export default async function ServicesPage() {
                   {service.description ?? "Deskripsi layanan belum diisi."}
                 </p>
 
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {service.workers.map((worker) => (
+                    <span
+                      key={`${service.id}-${worker.id}`}
+                      className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    >
+                      {worker.name}
+                    </span>
+                  ))}
+                </div>
+
                 <div className="mt-6 flex items-center justify-between gap-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-                  <p className="text-lg font-semibold">{formatCurrency(service.price)}</p>
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:text-emerald-300">
-                    Aktif
-                  </span>
+                  <div>
+                    <p className="text-lg font-semibold">{formatCurrency(service.price)}</p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      Dikerjakan oleh {service.workers.length} worker
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:text-emerald-300">
+                      Aktif
+                    </span>
+                    <Link
+                      href={`/book?serviceId=${service.id}`}
+                      className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+                    >
+                      Pesan
+                    </Link>
+                  </div>
                 </div>
               </article>
             ))}

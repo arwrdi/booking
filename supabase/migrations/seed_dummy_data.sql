@@ -94,6 +94,33 @@ where not exists (
   where w.name = seed.name
 );
 
+insert into public.worker_services (
+  worker_id,
+  service_id
+)
+select
+  w.id,
+  s.id
+from (
+  values
+    ('Alya', 'Haircut Pria'),
+    ('Alya', 'Haircut Wanita'),
+    ('Bima', 'Haircut Pria'),
+    ('Bima', 'Coloring Basic'),
+    ('Citra', 'Creambath'),
+    ('Citra', 'Haircut Wanita')
+) as relation(worker_name, service_name)
+join public.workers w
+  on w.name = relation.worker_name
+join public.services s
+  on s.name = relation.service_name
+where not exists (
+  select 1
+  from public.worker_services ws
+  where ws.worker_id = w.id
+    and ws.service_id = s.id
+);
+
 with slot_templates as (
   select time '09:00' as start_time, time '09:45' as end_time
   union all

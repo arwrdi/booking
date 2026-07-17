@@ -74,12 +74,26 @@ export default async function WorkersPage() {
                   {worker.specialization ?? "Spesialisasi belum diisi."}
                 </p>
 
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {worker.services.map((service) => (
+                    <span
+                      key={`${worker.id}-${service.id}`}
+                      className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    >
+                      {service.name}
+                    </span>
+                  ))}
+                </div>
+
                 <div className="mt-6 rounded-3xl bg-zinc-100 p-4 dark:bg-zinc-900">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
                     Slot 7 hari ke depan
                   </p>
                   <p className="mt-2 text-2xl font-semibold">
                     {slotCountByWorker[worker.id] ?? 0}
+                  </p>
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    Bisa mengerjakan {worker.services.length} layanan
                   </p>
                 </div>
               </article>

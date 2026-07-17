@@ -9,6 +9,8 @@ const navigation = [
   { href: "/services", label: "Services" },
   { href: "/workers", label: "Workers" },
   { href: "/availability", label: "Availability" },
+  { href: "/book", label: "Book" },
+  { href: "/my-bookings", label: "My Bookings" },
   { href: "/supabase-check", label: "Supabase Check" },
 ];
 

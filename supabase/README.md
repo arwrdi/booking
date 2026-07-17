@@ -12,7 +12,14 @@ Gunakan urutan berikut untuk setup project awal:
 3. `migrations/003_auth_profile_trigger.sql`
    Membuat trigger agar user yang login via Google otomatis punya baris di `profiles`.
 
-4. `migrations/seed_dummy_data.sql`
+4. `migrations/004_booking_slot_guard.sql`
+   Menambahkan unique index slot aktif dan trigger agar `availability_slots.is_available`
+   ikut sinkron dengan status booking.
+
+5. `migrations/005_worker_service_relations.sql`
+   Membuat tabel relasi `worker_services` agar tidak semua worker bisa mengerjakan semua service.
+
+6. `migrations/seed_dummy_data.sql`
    Mengisi data dummy untuk `services`, `workers`, dan `availability_slots`.
 
 ## Verifikasi cepat

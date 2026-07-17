@@ -69,6 +69,12 @@ export default async function Home() {
               >
                 Cek slot terdekat
               </Link>
+              <Link
+                href="/book"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+              >
+                Mulai booking
+              </Link>
             </>
           }
         />
@@ -131,9 +137,25 @@ export default async function Home() {
                     <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                       {service.description ?? "Deskripsi layanan belum diisi."}
                     </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {service.workers.map((worker) => (
+                        <span
+                          key={`${service.id}-${worker.id}`}
+                          className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                        >
+                          {worker.name}
+                        </span>
+                      ))}
+                    </div>
                     <p className="mt-4 text-base font-semibold text-zinc-950 dark:text-zinc-50">
                       {formatCurrency(service.price)}
                     </p>
+                    <Link
+                      href={`/book?serviceId=${service.id}`}
+                      className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+                    >
+                      Booking layanan ini
+                    </Link>
                   </article>
                 ))
               ) : (
@@ -174,6 +196,22 @@ export default async function Home() {
                     <p className="mt-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
                       {formatSlotRange(slot.start_at, slot.end_at)}
                     </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {slot.services.map((service) => (
+                        <span
+                          key={`${slot.id}-${service.id}`}
+                          className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                        >
+                          {service.name}
+                        </span>
+                      ))}
+                    </div>
+                    <Link
+                      href={`/book?slotId=${slot.id}`}
+                      className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+                    >
+                      Pilih slot ini
+                    </Link>
                   </article>
                 ))
               ) : (
