@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { BookingSelectionForm } from "@/components/booking/booking-selection-form";
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
-import { getCurrentUser } from "@/infrastructure/supabase/auth";
+import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 import { getPublicAvailabilitySlots, getPublicServices } from "@/infrastructure/supabase/publicData";
 
 import { createBooking } from "./actions";
@@ -42,10 +42,14 @@ type BookPageProps = {
 };
 
 export default async function BookPage({ searchParams }: BookPageProps) {
-  const user = await getCurrentUser();
+  const { user, isEmailVerified } = await getCurrentAuthState();
 
   if (!user) {
     redirect("/login?next=/book");
+  }
+
+  if (!isEmailVerified) {
+    redirect(buildVerifyEmailPath(user.email, "/book"));
   }
 
   const params = await searchParams;

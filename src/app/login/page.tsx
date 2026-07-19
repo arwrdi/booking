@@ -1,41 +1,108 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
+import { EmailSignInForm } from "@/components/auth/email-sign-in-form";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { LoginNotice } from "@/components/auth/login-notice";
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
-import { getCurrentUser } from "@/infrastructure/supabase/auth";
+import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 
 export const metadata: Metadata = {
   title: "Login",
-  description: "Masuk ke Booking MVP dengan Google Auth via Supabase.",
+  description: "Masuk ke Booking MVP dengan email/password atau Google Auth via Supabase.",
 };
 
-export default async function LoginPage() {
-  const user = await getCurrentUser();
+type LoginPageProps = {
+  searchParams: Promise<{
+    next?: string;
+    verified?: string;
+  }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const { user, isEmailVerified } = await getCurrentAuthState();
+  const nextPath = params.next?.startsWith("/") ? params.next : "/";
+
+  if (user && !isEmailVerified) {
+    redirect(buildVerifyEmailPath(user.email, nextPath));
+  }
 
   return (
     <SiteShell>
       <div className="space-y-8">
         <PageIntro
-          eyebrow="Google Auth"
-          title="Masuk dengan Google untuk mulai menguji flow booking private."
-          description="Setelah login berhasil, Supabase akan membuat session cookie dan trigger database akan otomatis membuat baris `profiles` untuk user baru."
+          eyebrow="Auth"
+          title="Masuk dengan email atau Google untuk mulai memakai flow booking private."
+          description="Semua akun harus memakai email yang terverifikasi. Untuk registrasi manual, Supabase akan mengirim link verifikasi ke inbox. Untuk Google, app hanya menerima akun dengan email provider yang sudah verified."
         />
 
         <LoginNotice />
 
+        {params.verified === "1" ? (
+          <StateCard
+            title="Email berhasil diverifikasi"
+            description="Verifikasi email sudah selesai. Sekarang kamu bisa login dan lanjut ke flow booking."
+          />
+        ) : null}
+
         <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-xl font-semibold tracking-tight">Langkah pengujian</h2>
-            <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              <p>1. Pastikan provider Google sudah aktif di dashboard Supabase Auth.</p>
-              <p>2. Tambahkan redirect URL callback ke `/auth/callback` di project ini.</p>
-              <p>3. Klik tombol login di bawah lalu selesaikan OAuth Google.</p>
-              <p>4. Setelah kembali ke app, header akan menampilkan email user yang aktif.</p>
+            <h2 className="text-xl font-semibold tracking-tight">Masuk ke akun</h2>
+            <div className="mt-5 space-y-6">
+              <EmailSignInForm nextPath={nextPath} />
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  <span className="bg-white px-3 dark:bg-zinc-950">atau</span>
+                </div>
+              </div>
+
+              <GoogleSignInButton nextPath={nextPath} />
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+              <p>Belum punya akun?</p>
+              <Link
+                href="/register"
+                className="font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-50"
+              >
+                Buat akun baru
+              </Link>
+              <span>atau</span>
+              <Link
+                href={buildVerifyEmailPath("", nextPath)}
+                className="font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-50"
+              >
+                kirim ulang email verifikasi
+              </Link>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <StateCard
+              title="Login manual"
+              description="User bisa masuk memakai email dan password setelah email pada akun tersebut diverifikasi."
+            />
+            <StateCard
+              title="Google tetap dicek"
+              description="Setelah OAuth selesai, app akan mengecek `email_confirmed_at`. Jika provider tidak mengirim email verified, session akan ditolak."
+            />
+            <StateCard
+              title="Setup Supabase"
+              description="Pastikan `Confirm email` aktif di Supabase Auth agar registrasi manual benar-benar mengirim link verifikasi."
+            />
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+            <h2 className="text-xl font-semibold tracking-tight">Status login saat ini</h2>
+            <div className="mt-5 flex flex-wrap gap-3">
               {user ? (
                 <>
                   <div className="rounded-full bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:text-emerald-300">
@@ -49,23 +116,25 @@ export default async function LoginPage() {
                   </Link>
                 </>
               ) : (
-                <GoogleSignInButton />
+                <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                  Belum ada session aktif. Login dengan salah satu metode di atas untuk lanjut ke halaman private.
+                </p>
               )}
             </div>
           </div>
 
           <div className="space-y-4">
             <StateCard
-              title="Redirect URL Google"
-              description="Tambahkan URL callback berikut di Supabase Auth Provider Settings: `http://localhost:3000/auth/callback` untuk local development."
+              title="Redirect URL"
+              description="Tambahkan URL callback `http://localhost:3000/auth/callback` di provider Google dan pakai URL yang sama untuk email verification redirect."
             />
             <StateCard
               title="Trigger profiles"
-              description="Saat user baru login, trigger `handle_new_user()` akan membuat baris `profiles` secara otomatis."
+              description="Saat user baru dibuat lewat email/password atau Google, trigger `handle_new_user()` akan membuat baris `profiles` secara otomatis."
             />
             <StateCard
               title="RLS setelah login"
-              description="Begitu session aktif, tabel `profiles` dan `bookings` mulai bisa dibatasi per-user dengan `auth.uid()`."
+              description="Begitu session aktif dan email sudah verified, tabel `profiles` dan `bookings` bisa dibatasi per-user dengan `auth.uid()`."
             />
           </div>
         </section>

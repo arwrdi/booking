@@ -6,6 +6,10 @@ const errorMessages: Record<string, string> = {
   missing_code: "Callback Google tidak membawa authorization code. Coba ulangi login dari tombol Google.",
   oauth_callback_failed:
     "Pertukaran code ke session gagal. Periksa URL callback di Google dan Supabase Auth.",
+  oauth_email_unverified:
+    "Akun yang digunakan belum punya email terverifikasi dari provider. Gunakan akun dengan email yang sudah verified.",
+  email_unverified:
+    "Email akun ini belum terverifikasi. Cek inbox lalu klik link verifikasi terlebih dulu.",
 };
 
 export function LoginNotice() {

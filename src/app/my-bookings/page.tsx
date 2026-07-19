@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
-import { getCurrentUser } from "@/infrastructure/supabase/auth";
+import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 import { getMyBookings } from "@/infrastructure/supabase/bookingData";
 
 import { cancelBooking } from "./actions";
@@ -74,10 +74,14 @@ type MyBookingsPageProps = {
 export default async function MyBookingsPage({
   searchParams,
 }: MyBookingsPageProps) {
-  const user = await getCurrentUser();
+  const { user, isEmailVerified } = await getCurrentAuthState();
 
   if (!user) {
     redirect("/login?next=/my-bookings");
+  }
+
+  if (!isEmailVerified) {
+    redirect(buildVerifyEmailPath(user.email, "/my-bookings"));
   }
 
   const params = await searchParams;

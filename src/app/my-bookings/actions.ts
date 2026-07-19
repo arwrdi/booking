@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 import { getSupabaseServerClient } from "@/infrastructure/supabase/serverClient";
 
 function getSafeSelectedValue(value: FormDataEntryValue | null) {
@@ -28,12 +29,14 @@ function buildMyBookingsRedirect(result: "cancelled" | "cancel_failed" | "missin
 export async function cancelBooking(formData: FormData) {
   const bookingId = getSafeSelectedValue(formData.get("bookingId"));
   const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, isEmailVerified } = await getCurrentAuthState();
 
   if (!user) {
     redirect("/login?next=/my-bookings");
+  }
+
+  if (!isEmailVerified) {
+    redirect(buildVerifyEmailPath(user.email, "/my-bookings"));
   }
 
   if (!bookingId) {

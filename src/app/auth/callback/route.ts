@@ -52,5 +52,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user && !user.email_confirmed_at) {
+    await supabase.auth.signOut();
+
+    const loginUrl = new URL("/login", requestUrl.origin);
+    loginUrl.searchParams.set("error", "oauth_email_unverified");
+    loginUrl.searchParams.set("next", nextPath);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return response;
 }

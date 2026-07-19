@@ -32,7 +32,11 @@ Gunakan urutan berikut untuk setup project awal:
    menit, sekaligus memperbarui `create_my_booking(...)` agar booking hold yang sudah lewat
    langsung dibersihkan saat slot yang sama dicoba ulang.
 
-9. `migrations/seed_dummy_data.sql`
+9. `migrations/009_profile_trigger_store_phone.sql`
+   Memperbarui trigger `handle_new_user()` agar metadata registrasi seperti nomor HP ikut
+   tersimpan ke `public.profiles`.
+
+10. `migrations/seed_dummy_data.sql`
    Mengisi data dummy untuk `services`, `workers`, dan `availability_slots`.
 
 ## Verifikasi cepat

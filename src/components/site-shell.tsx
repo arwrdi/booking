@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { getCurrentUser } from "@/infrastructure/supabase/auth";
+import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 
 const navigation = [
   { href: "/", label: "Home" },
@@ -32,7 +32,7 @@ type StateCardProps = {
 };
 
 export async function SiteShell({ children }: SiteShellProps) {
-  const user = await getCurrentUser();
+  const { user, isEmailVerified } = await getCurrentAuthState();
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-950 dark:bg-black dark:text-zinc-50">
@@ -60,6 +60,14 @@ export async function SiteShell({ children }: SiteShellProps) {
                   <div className="rounded-full bg-zinc-100 px-4 py-2 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                     Login sebagai {user.email ?? "user"}
                   </div>
+                  {!isEmailVerified ? (
+                    <Link
+                      href={buildVerifyEmailPath(user.email, "/")}
+                      className="inline-flex h-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-950/50"
+                    >
+                      Email belum verified
+                    </Link>
+                  ) : null}
                   <SignOutButton />
                 </>
               ) : (
@@ -67,7 +75,7 @@ export async function SiteShell({ children }: SiteShellProps) {
                   href="/login"
                   className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
                 >
-                  Masuk dengan Google
+                  Masuk / Register
                 </Link>
               )}
             </div>
@@ -80,7 +88,7 @@ export async function SiteShell({ children }: SiteShellProps) {
       <footer className="border-t border-zinc-200 bg-white/70 dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-5 text-sm text-zinc-600 dark:text-zinc-400">
           <p>Next.js + Supabase starter untuk booking flow MVP.</p>
-          <p>Google Auth siap diuji sebelum flow booking private dibuat.</p>
+          <p>Email/password, Google Auth, dan verifikasi email sudah siap diuji.</p>
         </div>
       </footer>
     </div>

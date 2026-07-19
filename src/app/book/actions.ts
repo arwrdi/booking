@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 import { getSupabaseServerClient } from "@/infrastructure/supabase/serverClient";
 
 function getSafeSelectedValue(value: FormDataEntryValue | null) {
@@ -33,12 +34,14 @@ export async function createBooking(formData: FormData) {
   const slotId = getSafeSelectedValue(formData.get("slotId"));
   const notes = getSafeSelectedValue(formData.get("notes"));
   const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, isEmailVerified } = await getCurrentAuthState();
 
   if (!user) {
     redirect("/login?next=/book");
+  }
+
+  if (!isEmailVerified) {
+    redirect(buildVerifyEmailPath(user.email, "/book"));
   }
 
   if (!serviceId || !slotId) {
