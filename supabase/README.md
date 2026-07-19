@@ -27,7 +27,12 @@ Gunakan urutan berikut untuk setup project awal:
    Membersihkan booking aktif ganda yang sudah terlanjur terbentuk, mengunci ulang unique
    index slot aktif, dan menambahkan function atomik `create_my_booking(...)`.
 
-8. `migrations/seed_dummy_data.sql`
+8. `migrations/008_auto_expire_pending_bookings.sql`
+   Menambahkan auto-expire booking `pending_payment` via function SQL + `pg_cron` setiap
+   menit, sekaligus memperbarui `create_my_booking(...)` agar booking hold yang sudah lewat
+   langsung dibersihkan saat slot yang sama dicoba ulang.
+
+9. `migrations/seed_dummy_data.sql`
    Mengisi data dummy untuk `services`, `workers`, dan `availability_slots`.
 
 ## Verifikasi cepat
