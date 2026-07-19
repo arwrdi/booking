@@ -39,6 +39,7 @@ export type BookingSummary = {
   created_at: string;
   worker: JoinedWorker;
   service: JoinedService;
+  canCancel: boolean;
 };
 
 function unwrapJoinedRecord<T>(value: T | T[] | null): T | null {
@@ -71,6 +72,9 @@ export async function getMyBookings() {
       created_at: booking.created_at,
       worker: unwrapJoinedRecord(booking.worker),
       service: unwrapJoinedRecord(booking.service),
+      canCancel:
+        ["pending_payment", "confirmed"].includes(booking.status) &&
+        booking.payment_status !== "paid",
     })) as BookingSummary[],
     errorMessage: error ? error.message : null,
   };

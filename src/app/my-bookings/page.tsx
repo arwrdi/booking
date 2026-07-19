@@ -6,6 +6,8 @@ import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { getCurrentUser } from "@/infrastructure/supabase/auth";
 import { getMyBookings } from "@/infrastructure/supabase/bookingData";
 
+import { cancelBooking } from "./actions";
+
 export const metadata: Metadata = {
   title: "My Bookings",
   description: "Daftar booking milik user yang sedang login.",
@@ -55,9 +57,17 @@ function getStatusTone(status: string) {
   }
 }
 
+const errorMessages: Record<string, string> = {
+  cancel_failed:
+    "Booking belum berhasil dibatalkan. Kemungkinan status booking sudah berubah atau slot ini sudah diproses lebih lanjut.",
+  missing_booking: "ID booking tidak ditemukan saat mencoba membatalkan pesanan.",
+};
+
 type MyBookingsPageProps = {
   searchParams: Promise<{
     created?: string;
+    cancelled?: string;
+    error?: string;
   }>;
 };
 
@@ -72,6 +82,7 @@ export default async function MyBookingsPage({
 
   const params = await searchParams;
   const { data: bookings, errorMessage } = await getMyBookings();
+  const actionError = params.error ? errorMessages[params.error] : null;
 
   return (
     <SiteShell>
@@ -94,6 +105,21 @@ export default async function MyBookingsPage({
           <StateCard
             title="Booking berhasil dibuat"
             description="Booking baru sudah masuk dengan status `pending_payment` dan akan muncul di daftar di bawah."
+          />
+        ) : null}
+
+        {params.cancelled === "1" ? (
+          <StateCard
+            title="Booking berhasil dibatalkan"
+            description="Status booking diubah menjadi `cancelled` dan slot otomatis kembali tersedia untuk user lain."
+          />
+        ) : null}
+
+        {actionError ? (
+          <StateCard
+            tone="warning"
+            title="Aksi booking belum berhasil"
+            description={actionError}
           />
         ) : null}
 
@@ -156,6 +182,22 @@ export default async function MyBookingsPage({
                     <p className="mt-2">{booking.notes}</p>
                   </div>
                 ) : null}
+
+                {booking.canCancel ? (
+                  <form action={cancelBooking} className="mt-5">
+                    <input type="hidden" name="bookingId" value={booking.id} />
+                    <button
+                      type="submit"
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70"
+                    >
+                      Batalkan booking
+                    </button>
+                  </form>
+                ) : (
+                  <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-400">
+                    Booking ini tidak bisa dibatalkan dari akun customer.
+                  </p>
+                )}
               </article>
             ))}
           </section>

@@ -19,7 +19,15 @@ Gunakan urutan berikut untuk setup project awal:
 5. `migrations/005_worker_service_relations.sql`
    Membuat tabel relasi `worker_services` agar tidak semua worker bisa mengerjakan semua service.
 
-6. `migrations/seed_dummy_data.sql`
+6. `migrations/006_booking_cancellation.sql`
+   Menambahkan SQL function aman untuk cancel booking milik user sendiri tanpa membuka
+   policy `UPDATE` umum pada tabel `bookings`.
+
+7. `migrations/007_booking_integrity_hardening.sql`
+   Membersihkan booking aktif ganda yang sudah terlanjur terbentuk, mengunci ulang unique
+   index slot aktif, dan menambahkan function atomik `create_my_booking(...)`.
+
+8. `migrations/seed_dummy_data.sql`
    Mengisi data dummy untuk `services`, `workers`, dan `availability_slots`.
 
 ## Verifikasi cepat

@@ -28,6 +28,9 @@ const errorMessages: Record<string, string> = {
   relation_missing:
     "Relasi worker dan service belum tersedia. Jalankan migration `005_worker_service_relations.sql` lalu seed ulang.",
   insert_failed: "Booking gagal disimpan. Coba lagi sebentar lagi.",
+  booking_function_missing:
+    "Function booking atomik belum ada di database. Jalankan migration `007_booking_integrity_hardening.sql`.",
+  unauthorized: "Session login tidak valid. Coba login ulang lalu ulangi booking.",
 };
 
 type BookPageProps = {
