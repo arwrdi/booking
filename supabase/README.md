@@ -36,7 +36,11 @@ Gunakan urutan berikut untuk setup project awal:
    Memperbarui trigger `handle_new_user()` agar metadata registrasi seperti nomor HP ikut
    tersimpan ke `public.profiles`.
 
-10. `migrations/seed_dummy_data.sql`
+10. `migrations/010_midtrans_payments.sql`
+   Membuat tabel `payments` untuk menyimpan order Midtrans, status pembayaran, payload
+   transaksi, dan data webhook agar sinkron dengan status booking.
+
+11. `migrations/seed_dummy_data.sql`
    Mengisi data dummy untuk `services`, `workers`, dan `availability_slots`.
 
 ## Verifikasi cepat
@@ -55,3 +59,5 @@ select count(*) as slots_count from public.availability_slots;
   sebelum tabelnya benar-benar dibuat.
 - Untuk halaman publik saat ini, data yang dibuka ke `anon` hanya:
   `services`, `workers`, dan `availability_slots`.
+- Untuk integrasi Midtrans sandbox, isi `MIDTRANS_SERVER_KEY` di `.env.local` lalu arahkan
+  Notification URL Midtrans ke `[base-url]/api/payments/midtrans/webhook`.

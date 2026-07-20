@@ -3,6 +3,8 @@
 import { useSearchParams } from "next/navigation";
 
 const errorMessages: Record<string, string> = {
+  oauth_start_failed:
+    "URL login Google tidak berhasil dibuat. Periksa konfigurasi provider Google dan URL callback di Supabase.",
   missing_code: "Callback Google tidak membawa authorization code. Coba ulangi login dari tombol Google.",
   oauth_callback_failed:
     "Pertukaran code ke session gagal. Periksa URL callback di Google dan Supabase Auth.",

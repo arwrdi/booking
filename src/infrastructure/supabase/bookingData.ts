@@ -13,6 +13,16 @@ type JoinedService = {
   price: number;
 } | null;
 
+type JoinedPayment = {
+  id: string;
+  provider_order_id: string;
+  payment_method: string | null;
+  status: string;
+  redirect_url: string | null;
+  paid_at: string | null;
+  expired_at: string | null;
+} | null;
+
 type BookingRow = {
   id: string;
   booking_date: string;
@@ -25,6 +35,7 @@ type BookingRow = {
   created_at: string;
   worker: JoinedWorker | JoinedWorker[];
   service: JoinedService | JoinedService[];
+  payment: JoinedPayment | JoinedPayment[];
 };
 
 export type BookingSummary = {
@@ -39,7 +50,9 @@ export type BookingSummary = {
   created_at: string;
   worker: JoinedWorker;
   service: JoinedService;
+  payment: JoinedPayment;
   canCancel: boolean;
+  canPay: boolean;
 };
 
 function unwrapJoinedRecord<T>(value: T | T[] | null): T | null {
@@ -55,7 +68,7 @@ export async function getMyBookings() {
   const { data, error } = await supabase
     .from("bookings")
     .select(
-      "id, booking_date, start_at, end_at, status, payment_status, notes, held_until, created_at, worker:workers(id, name, specialization), service:services(id, name, duration_minutes, price)",
+      "id, booking_date, start_at, end_at, status, payment_status, notes, held_until, created_at, worker:workers(id, name, specialization), service:services(id, name, duration_minutes, price), payment:payments(id, provider_order_id, payment_method, status, redirect_url, paid_at, expired_at)",
     )
     .order("start_at", { ascending: true });
 
@@ -72,9 +85,15 @@ export async function getMyBookings() {
       created_at: booking.created_at,
       worker: unwrapJoinedRecord(booking.worker),
       service: unwrapJoinedRecord(booking.service),
+      payment: unwrapJoinedRecord(booking.payment),
       canCancel:
         ["pending_payment", "confirmed"].includes(booking.status) &&
         booking.payment_status !== "paid",
+      canPay:
+        booking.status === "pending_payment" &&
+        booking.payment_status === "pending" &&
+        Boolean(booking.held_until) &&
+        new Date(booking.held_until).getTime() > Date.now(),
     })) as BookingSummary[],
     errorMessage: error ? error.message : null,
   };

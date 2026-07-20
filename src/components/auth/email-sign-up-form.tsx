@@ -81,7 +81,7 @@ export function EmailSignUpForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} method="post" className="space-y-4">
       <label className="block">
         <span className="text-sm font-medium">Nama lengkap</span>
         <input

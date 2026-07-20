@@ -13,3 +13,14 @@ export function getSupabaseEnv() {
   return { url, anonKey };
 }
 
+export function getSupabaseAdminEnv() {
+  const { url } = getSupabaseEnv();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+
+  if (!serviceRoleKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing");
+  }
+
+  return { url, serviceRoleKey };
+}
+

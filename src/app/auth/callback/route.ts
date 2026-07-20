@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const nextPath = getSafeNextPath(requestUrl.searchParams.get("next"));
+  const isRecoveryFlow = nextPath.startsWith("/reset-password");
   const { url, anonKey } = getSupabaseEnv();
 
   const response = NextResponse.redirect(new URL(nextPath, requestUrl.origin));
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user && !user.email_confirmed_at) {
+  if (user && !user.email_confirmed_at && !isRecoveryFlow) {
     await supabase.auth.signOut();
 
     const loginUrl = new URL("/login", requestUrl.origin);

@@ -6,7 +6,7 @@ import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 import { getMyBookings } from "@/infrastructure/supabase/bookingData";
 
-import { cancelBooking } from "./actions";
+import { cancelBooking, startMidtransPayment } from "./actions";
 
 export const metadata: Metadata = {
   title: "My Bookings",
@@ -61,6 +61,16 @@ const errorMessages: Record<string, string> = {
   cancel_failed:
     "Booking belum berhasil dibatalkan. Kemungkinan status booking sudah berubah atau slot ini sudah diproses lebih lanjut.",
   missing_booking: "ID booking tidak ditemukan saat mencoba membatalkan pesanan.",
+  payment_missing_booking:
+    "ID booking untuk pembayaran tidak terkirim atau booking sudah tidak ditemukan. Coba refresh halaman lalu tekan bayar lagi.",
+  payment_create_failed:
+    "Transaksi Midtrans belum berhasil dibuat. Periksa konfigurasi server key dan coba lagi.",
+  payment_not_ready:
+    "Booking ini tidak dalam kondisi siap dibayar lagi. Refresh halaman untuk melihat status terbaru.",
+  payment_expired:
+    "Waktu hold booking ini sudah habis, jadi pembayaran tidak bisa dilanjutkan lagi.",
+  payment_missing_config:
+    "Konfigurasi `MIDTRANS_SERVER_KEY` belum tersedia di environment server aplikasi.",
 };
 
 type MyBookingsPageProps = {
@@ -68,6 +78,10 @@ type MyBookingsPageProps = {
     created?: string;
     cancelled?: string;
     error?: string;
+    payment?: string;
+    dbg_session?: string;
+    dbg_payment_stage?: string;
+    dbg_payment_error?: string;
   }>;
 };
 
@@ -87,13 +101,17 @@ export default async function MyBookingsPage({
   const params = await searchParams;
   const { data: bookings, errorMessage } = await getMyBookings();
   const actionError = params.error ? errorMessages[params.error] : null;
+  const paymentDebugMessage =
+    params.dbg_session === "midtrans-second-payment"
+      ? `Debug payment: stage=${params.dbg_payment_stage ?? "-"}, error=${params.dbg_payment_error ?? "-"}`
+      : null;
 
   return (
     <SiteShell>
       <div className="space-y-8">
         <PageIntro
           eyebrow="My Bookings"
-          title="Pantau booking yang sudah kamu buat dari akun Google ini."
+          title="Pantau booking yang sudah kamu buat dari akun yang sedang aktif."
           description="Halaman ini memakai policy RLS `bookings select own or admin`, jadi user hanya melihat booking miliknya sendiri."
           actions={
             <Link
@@ -119,11 +137,18 @@ export default async function MyBookingsPage({
           />
         ) : null}
 
+        {params.payment === "pending" ? (
+          <StateCard
+            title="Transaksi Midtrans berhasil dibuat"
+            description="Kamu akan diarahkan ke halaman pembayaran Midtrans. Kalau sempat menutupnya, gunakan tombol bayar lagi untuk melanjutkan transaksi yang sama."
+          />
+        ) : null}
+
         {actionError ? (
           <StateCard
             tone="warning"
             title="Aksi booking belum berhasil"
-            description={actionError}
+            description={paymentDebugMessage ? `${actionError} ${paymentDebugMessage}` : actionError}
           />
         ) : null}
 
@@ -168,6 +193,9 @@ export default async function MyBookingsPage({
                   <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400 md:text-right">
                     <p>Payment: {booking.payment_status}</p>
                     <p>{formatCurrency(booking.service?.price)}</p>
+                    {booking.payment?.payment_method ? (
+                      <p>Metode: {booking.payment.payment_method}</p>
+                    ) : null}
                     {booking.held_until ? (
                       <p>
                         Hold sampai{" "}
@@ -187,28 +215,43 @@ export default async function MyBookingsPage({
                   </div>
                 ) : null}
 
-                {booking.canCancel ? (
-                  <form action={cancelBooking} className="mt-5">
-                    <input type="hidden" name="bookingId" value={booking.id} />
-                    <button
-                      type="submit"
-                      className="inline-flex h-11 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70"
-                    >
-                      Batalkan booking
-                    </button>
-                  </form>
-                ) : (
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {booking.canPay ? (
+                    <form action={startMidtransPayment.bind(null, booking.id)}>
+                      <button
+                        type="submit"
+                        className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                      >
+                        {booking.payment?.redirect_url ? "Lanjutkan pembayaran" : "Bayar sekarang"}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {booking.canCancel ? (
+                    <form action={cancelBooking}>
+                      <input type="hidden" name="bookingId" value={booking.id} />
+                      <button
+                        type="submit"
+                        className="inline-flex h-11 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70"
+                      >
+                        Batalkan booking
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+
+                {!booking.canPay && !booking.canCancel ? (
                   <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-400">
-                    Booking ini tidak bisa dibatalkan dari akun customer.
+                    Booking ini tidak bisa diubah lagi dari akun customer.
                   </p>
-                )}
+                ) : null}
               </article>
             ))}
           </section>
         ) : (
           <StateCard
             title="Belum ada booking"
-            description="Mulai dari halaman booking untuk membuat transaksi pertama dengan akun Google yang sedang aktif."
+            description="Mulai dari halaman booking untuk membuat transaksi pertama dengan akun yang sedang aktif."
           />
         )}
       </div>

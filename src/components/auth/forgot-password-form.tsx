@@ -4,20 +4,14 @@ import { useState } from "react";
 
 import { getSupabaseBrowserClient } from "@/infrastructure/supabase/browserClient";
 
-type ResendVerificationFormProps = {
-  initialEmail?: string;
-};
-
-function buildEmailRedirectUrl() {
-  const redirectTo = new URL("/auth/callback", window.location.origin);
-  redirectTo.searchParams.set("next", "/login?verified=1");
-  return redirectTo.toString();
+function buildRecoveryRedirectUrl() {
+  const callbackUrl = new URL("/auth/callback", window.location.origin);
+  callbackUrl.searchParams.set("next", "/reset-password?recovery=1");
+  return callbackUrl.toString();
 }
 
-export function ResendVerificationForm({
-  initialEmail = "",
-}: ResendVerificationFormProps) {
-  const [email, setEmail] = useState(initialEmail);
+export function ForgotPasswordForm() {
+  const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +21,7 @@ export function ResendVerificationForm({
 
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail) {
-      setErrorMessage("Masukkan email yang ingin dikirimi ulang link verifikasi.");
+      setErrorMessage("Masukkan email akun yang ingin di-reset.");
       return;
     }
 
@@ -36,21 +30,17 @@ export function ResendVerificationForm({
     setErrorMessage(null);
 
     const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: trimmedEmail,
-      options: {
-        emailRedirectTo: buildEmailRedirectUrl(),
-      },
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: buildRecoveryRedirectUrl(),
     });
 
     if (error) {
-      setErrorMessage("Gagal mengirim ulang email verifikasi. Pastikan email sudah benar.");
+      setErrorMessage("Gagal mengirim email reset password. Periksa email lalu coba lagi.");
       setIsLoading(false);
       return;
     }
 
-    setMessage("Link verifikasi baru sudah dikirim. Cek inbox dan folder spam.");
+    setMessage("Link reset password sudah dikirim. Cek inbox dan folder spam.");
     setIsLoading(false);
   }
 
@@ -60,6 +50,7 @@ export function ResendVerificationForm({
         <span className="text-sm font-medium">Email akun</span>
         <input
           type="email"
+          autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="nama@email.com"
@@ -70,9 +61,9 @@ export function ResendVerificationForm({
       <button
         type="submit"
         disabled={isLoading}
-        className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
+        className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
       >
-        {isLoading ? "Mengirim ulang..." : "Kirim ulang email verifikasi"}
+        {isLoading ? "Mengirim..." : "Kirim link reset password"}
       </button>
 
       {message ? (

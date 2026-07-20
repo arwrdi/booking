@@ -17,6 +17,7 @@ type LoginPageProps = {
   searchParams: Promise<{
     next?: string;
     verified?: string;
+    password_reset?: string;
   }>;
 };
 
@@ -44,6 +45,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <StateCard
             title="Email berhasil diverifikasi"
             description="Verifikasi email sudah selesai. Sekarang kamu bisa login dan lanjut ke flow booking."
+          />
+        ) : null}
+
+        {params.password_reset === "1" ? (
+          <StateCard
+            title="Password berhasil direset"
+            description="Password baru sudah tersimpan. Silakan login lagi dengan password yang baru."
           />
         ) : null}
 
@@ -79,6 +87,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 className="font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-50"
               >
                 kirim ulang email verifikasi
+              </Link>
+              <span>atau</span>
+              <Link
+                href="/forgot-password"
+                className="font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-50"
+              >
+                reset password
               </Link>
             </div>
           </div>
