@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { BookingSelectionForm } from "@/components/booking/booking-selection-form";
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
-import { getPublicAvailabilitySlots, getPublicServices } from "@/infrastructure/supabase/publicData";
+import { getPublicServices } from "@/infrastructure/supabase/publicData";
 
 import { createBooking } from "./actions";
 
@@ -57,20 +57,16 @@ export default async function BookPage({ searchParams }: BookPageProps) {
   const selectedSlotId = params.slotId ?? "";
   const errorMessage = params.error ? errorMessages[params.error] : null;
 
-  const [servicesResult, slotsResult] = await Promise.all([
-    getPublicServices(),
-    getPublicAvailabilitySlots(120),
-  ]);
-
-  const warnings = [servicesResult.errorMessage, slotsResult.errorMessage].filter(Boolean) as string[];
+  const servicesResult = await getPublicServices();
+  const warnings = [servicesResult.errorMessage].filter(Boolean) as string[];
 
   return (
     <SiteShell>
       <div className="space-y-8">
         <PageIntro
-          eyebrow="Booking Flow"
-          title="Pilih layanan dan slot, lalu simpan booking pertama kamu."
-          description="Flow ini masih versi MVP: user login memilih satu layanan, satu slot, lalu membuat booking dengan status `pending_payment`."
+          eyebrow="Booking"
+          title="Buat booking baru"
+          description="Pilih layanan, lalu pilih worker beserta jadwalnya. Pembayaran dilakukan setelah layanan selesai."
           actions={
             <Link
               href="/my-bookings"
@@ -100,7 +96,6 @@ export default async function BookPage({ searchParams }: BookPageProps) {
         <form action={createBooking}>
           <BookingSelectionForm
             services={servicesResult.data}
-            slots={slotsResult.data}
             selectedServiceId={selectedServiceId}
             selectedSlotId={selectedSlotId}
           />

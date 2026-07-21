@@ -7,6 +7,15 @@ export type AuthState = {
   isEmailVerified: boolean;
 };
 
+export type AppRole = "customer" | "admin";
+
+export type ProfileSummary = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: AppRole;
+};
+
 export function isEmailVerified(user: User | null) {
   return Boolean(user?.email_confirmed_at);
 }
@@ -59,4 +68,35 @@ export async function getCurrentVerifiedUser(): Promise<User | null> {
   }
 
   return user;
+}
+
+export async function getCurrentProfile(): Promise<ProfileSummary | null> {
+  const { user } = await getCurrentAuthState();
+
+  if (!user) {
+    return null;
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role")
+    .eq("id", user.id)
+    .maybeSingle<ProfileSummary>();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
+}
+
+export async function getCurrentAdminProfile(): Promise<ProfileSummary | null> {
+  const profile = await getCurrentProfile();
+
+  if (!profile || profile.role !== "admin") {
+    return null;
+  }
+
+  return profile;
 }

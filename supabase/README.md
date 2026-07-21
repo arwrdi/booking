@@ -61,3 +61,12 @@ select count(*) as slots_count from public.availability_slots;
   `services`, `workers`, dan `availability_slots`.
 - Untuk integrasi Midtrans sandbox, isi `MIDTRANS_SERVER_KEY` di `.env.local` lalu arahkan
   Notification URL Midtrans ke `[base-url]/api/payments/midtrans/webhook`.
+11. `migrations/011_invoice_items_pay_after_service.sql`
+   Mengubah flow ke pay-after-service: tabel `booking_invoice_items`, fungsi admin
+   `admin_add_booking_item`, `admin_mark_booking_completed`, `admin_cancel_booking`,
+   field portofolio worker (`bio`, `portfolio_urls`), dan revisi `create_my_booking`.
+
+- Untuk email konfirmasi setelah pembayaran sukses, isi `RESEND_API_KEY` dan `EMAIL_FROM`.
+  Jika kosong, webhook tetap jalan dan email hanya di-skip.
+- Jadikan akun admin dengan SQL: `update public.profiles set role = 'admin' where email = 'you@example.com';`
+  lalu buka `/admin`.

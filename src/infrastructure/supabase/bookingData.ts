@@ -87,13 +87,9 @@ export async function getMyBookings() {
       service: unwrapJoinedRecord(booking.service),
       payment: unwrapJoinedRecord(booking.payment),
       canCancel:
-        ["pending_payment", "confirmed"].includes(booking.status) &&
+        ["in_progress", "confirmed"].includes(booking.status) &&
         booking.payment_status !== "paid",
-      canPay:
-        booking.status === "pending_payment" &&
-        booking.payment_status === "pending" &&
-        Boolean(booking.held_until) &&
-        new Date(booking.held_until).getTime() > Date.now(),
+      canPay: booking.payment_status === "ready_to_pay",
     })) as BookingSummary[],
     errorMessage: error ? error.message : null,
   };

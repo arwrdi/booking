@@ -2,7 +2,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
+import {
+  buildVerifyEmailPath,
+  getCurrentAuthState,
+  getCurrentProfile,
+} from "@/infrastructure/supabase/auth";
 
 const navigation = [
   { href: "/", label: "Home" },
@@ -11,7 +15,6 @@ const navigation = [
   { href: "/availability", label: "Availability" },
   { href: "/book", label: "Book" },
   { href: "/my-bookings", label: "My Bookings" },
-  { href: "/supabase-check", label: "Supabase Check" },
 ];
 
 type SiteShellProps = {
@@ -32,7 +35,15 @@ type StateCardProps = {
 };
 
 export async function SiteShell({ children }: SiteShellProps) {
-  const { user, isEmailVerified } = await getCurrentAuthState();
+  const [{ user, isEmailVerified }, profile] = await Promise.all([
+    getCurrentAuthState(),
+    getCurrentProfile(),
+  ]);
+
+  const navItems =
+    profile?.role === "admin"
+      ? [...navigation, { href: "/admin", label: "Admin" }]
+      : navigation;
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-950 dark:bg-black dark:text-zinc-50">
@@ -43,7 +54,7 @@ export async function SiteShell({ children }: SiteShellProps) {
           </Link>
           <div className="flex flex-col gap-3 lg:items-end">
             <nav className="flex flex-wrap items-center justify-start gap-2 text-sm text-zinc-600 dark:text-zinc-300 lg:justify-end">
-              {navigation.map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

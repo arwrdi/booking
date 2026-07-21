@@ -6,6 +6,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import {
   buildMidtransCustomerDetails,
+  canResumeSnapPayment,
   createMidtransOrderId,
   createSnapRedirectTransaction,
 } from "@/infrastructure/midtrans/service";
@@ -32,6 +33,7 @@ function buildMyBookingsRedirect(
     | "payment_not_ready"
     | "payment_expired"
     | "payment_missing_config",
+  detail?: string,
 ) {
   const params = new URLSearchParams();
 
@@ -41,18 +43,9 @@ function buildMyBookingsRedirect(
     params.set("error", result);
   }
 
-  return `/my-bookings?${params.toString()}`;
-}
-
-function buildPaymentFailureDebugRedirect(debug: {
-  message: string;
-  stage: "midtrans_request" | "payment_upsert";
-}) {
-  const params = new URLSearchParams();
-  params.set("error", "payment_create_failed");
-  params.set("dbg_session", "midtrans-second-payment");
-  params.set("dbg_payment_stage", debug.stage);
-  params.set("dbg_payment_error", debug.message || "(empty)");
+  if (detail) {
+    params.set("payment_error", detail.slice(0, 180));
+  }
 
   return `/my-bookings?${params.toString()}`;
 }
@@ -64,6 +57,14 @@ type BookingPaymentRow = {
   status: string;
   payment_status: string;
   held_until: string | null;
+};
+
+type InvoiceItemRow = {
+  id: string;
+  service_id: string | null;
+  service_name: string;
+  price: number;
+  qty: number;
 };
 
 type ProfilePaymentRow = {
@@ -83,11 +84,8 @@ type PaymentRow = {
   provider_order_id: string;
   status: string;
   redirect_url: string | null;
+  created_at: string;
 };
-
-function canResumeExistingPayment(payment: PaymentRow | null) {
-  return payment?.status === "pending" && Boolean(payment.redirect_url);
-}
 
 export async function cancelBooking(formData: FormData) {
   const bookingId = getSafeSelectedValue(formData.get("bookingId"));
@@ -150,48 +148,45 @@ export async function startMidtransPayment(boundBookingId: string, formData: For
     redirect(buildMyBookingsRedirect("payment_missing_booking"));
   }
 
-  if (booking.status !== "pending_payment" || booking.payment_status !== "pending") {
+  if (booking.payment_status !== "ready_to_pay") {
     redirect(buildMyBookingsRedirect("payment_not_ready"));
   }
 
-  if (!booking.held_until || new Date(booking.held_until).getTime() <= Date.now()) {
-    await supabase.rpc("expire_pending_bookings");
-    revalidatePath("/");
-    revalidatePath("/availability");
-    revalidatePath("/workers");
-    revalidatePath("/book");
-    revalidatePath("/my-bookings");
-    redirect(buildMyBookingsRedirect("payment_expired"));
-  }
-
-  const [{ data: profile }, { data: service }, { data: payment }] = await Promise.all([
+  const [{ data: profile }, { data: invoiceItems }, { data: payment }] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, email, phone")
       .eq("id", user.id)
       .maybeSingle<ProfilePaymentRow>(),
     supabase
-      .from("services")
-      .select("id, name, price")
-      .eq("id", booking.service_id)
-      .maybeSingle<ServicePaymentRow>(),
+      .from("booking_invoice_items")
+      .select("id, service_id, service_name, price, qty")
+      .eq("booking_id", booking.id),
     supabase
       .from("payments")
-      .select("id, provider_order_id, status, redirect_url")
+      .select("id, provider_order_id, status, redirect_url, created_at")
       .eq("booking_id", booking.id)
       .maybeSingle<PaymentRow>(),
   ]);
 
-  if (!profile?.email || !service?.name || typeof service.price !== "number") {
-    redirect(buildMyBookingsRedirect("payment_create_failed"));
+  const items = (invoiceItems ?? []) as InvoiceItemRow[];
+  const grossAmount = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+  if (!profile?.email || items.length === 0 || grossAmount <= 0) {
+    redirect(
+      buildMyBookingsRedirect(
+        "payment_create_failed",
+        "Data profil atau invoice belum lengkap untuk membuat transaksi.",
+      ),
+    );
   }
 
   if (payment?.status === "paid") {
     redirect(buildMyBookingsRedirect("payment_not_ready"));
   }
 
-  if (canResumeExistingPayment(payment)) {
-    redirect(payment.redirect_url as string);
+  if (canResumeSnapPayment(payment)) {
+    redirect(payment!.redirect_url as string);
   }
 
   const providerOrderId = createMidtransOrderId(booking.id);
@@ -200,21 +195,19 @@ export async function startMidtransPayment(boundBookingId: string, formData: For
   try {
     const transaction = await createSnapRedirectTransaction({
       orderId: providerOrderId,
-      grossAmount: service.price,
+      grossAmount,
       customerDetails: buildMidtransCustomerDetails(
         profile.full_name,
-        profile.email,
+        profile.email ?? "",
         profile.phone,
       ),
-      itemDetails: [
-        {
-          id: service.id,
-          price: service.price,
-          quantity: 1,
-          name: service.name.slice(0, 50),
-        },
-      ],
-      expiryMinutes: 15,
+      itemDetails: items.map((item) => ({
+        id: item.service_id ?? item.id,
+        price: item.price,
+        quantity: item.qty,
+        name: item.service_name.slice(0, 50),
+      })),
+      expiryMinutes: 60,
       callbackUrls: {
         finish: `${appBaseUrl}/payment/result?result=finish`,
         unfinish: `${appBaseUrl}/payment/result?result=unfinish`,
@@ -222,33 +215,29 @@ export async function startMidtransPayment(boundBookingId: string, formData: For
       },
     });
 
-    const { error } = await supabase.from("payments").upsert(
-      {
-        booking_id: booking.id,
-        provider: "midtrans",
-        provider_order_id: providerOrderId,
-        amount: service.price,
-        currency: "IDR",
-        status: "pending",
-        snap_token: transaction.token,
-        redirect_url: transaction.redirect_url,
-        status_message: "Midtrans transaction created",
-        raw_transaction: transaction,
-        paid_at: null,
-        expired_at: null,
-      },
-      {
-        onConflict: "booking_id",
-      },
-    );
+    const paymentPayload = {
+      booking_id: booking.id,
+      provider: "midtrans",
+      provider_order_id: providerOrderId,
+      amount: grossAmount,
+      currency: "IDR",
+      status: "pending",
+      snap_token: transaction.token,
+      redirect_url: transaction.redirect_url,
+      status_message: "Midtrans transaction created",
+      raw_transaction: { ...transaction, invoice_items: items },
+      paid_at: null,
+      expired_at: null,
+    };
+
+    // Update existing row when recreating Snap; insert when belum ada payment.
+    // Ini menghindari konflik unique booking_id / provider_order_id pada attempt kedua.
+    const { error } = payment?.id
+      ? await supabase.from("payments").update(paymentPayload).eq("id", payment.id)
+      : await supabase.from("payments").insert(paymentPayload);
 
     if (error) {
-      redirect(
-        buildPaymentFailureDebugRedirect({
-          stage: "payment_upsert",
-          message: error.message,
-        }),
-      );
+      redirect(buildMyBookingsRedirect("payment_create_failed", error.message));
     }
 
     revalidatePath("/my-bookings");
@@ -263,10 +252,10 @@ export async function startMidtransPayment(boundBookingId: string, formData: For
     }
 
     redirect(
-      buildPaymentFailureDebugRedirect({
-        stage: "midtrans_request",
-        message: error instanceof Error ? error.message : "unknown_error",
-      }),
+      buildMyBookingsRedirect(
+        "payment_create_failed",
+        error instanceof Error ? error.message : "unknown_error",
+      ),
     );
   }
 }

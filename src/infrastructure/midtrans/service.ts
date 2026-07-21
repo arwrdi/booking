@@ -49,6 +49,9 @@ export type MidtransNotificationPayload = {
   currency?: string;
 };
 
+/** Snap token biasanya valid selama expiryMinutes; resume hanya dalam jendela ini. */
+export const MIDTRANS_SNAP_RESUME_WINDOW_MS = 14 * 60 * 1000;
+
 function getAuthorizationHeader(serverKey: string) {
   return `Basic ${Buffer.from(`${serverKey}:`).toString("base64")}`;
 }
@@ -70,9 +73,12 @@ function splitName(fullName: string) {
 }
 
 export function createMidtransOrderId(bookingId: string) {
-  const normalizedBookingId = bookingId.replace(/-/g, "").slice(0, 24);
+  // Midtrans membatasi panjang order_id; jaga tetap <= 50 karakter.
+  const normalizedBookingId = bookingId.replace(/-/g, "").slice(0, 16);
+  const timePart = Date.now().toString(36).slice(-8);
+  const randomPart = Math.random().toString(36).slice(2, 6);
 
-  return `booking-${normalizedBookingId}-${Date.now()}`;
+  return `booking-${normalizedBookingId}-${timePart}${randomPart}`;
 }
 
 export async function createSnapRedirectTransaction({
@@ -116,13 +122,15 @@ export async function createSnapRedirectTransaction({
 
   const payload = (await response.json().catch(() => null)) as
     | MidtransSnapTransaction
-    | { error_messages?: string[] };
+    | { error_messages?: string[]; message?: string };
 
   if (!response.ok || !payload || !("token" in payload) || !("redirect_url" in payload)) {
     const errorMessage =
       payload && "error_messages" in payload && Array.isArray(payload.error_messages)
         ? payload.error_messages.join(" ")
-        : "Midtrans transaction creation failed";
+        : payload && "message" in payload && typeof payload.message === "string"
+          ? payload.message
+          : `Midtrans transaction creation failed (${response.status})`;
 
     throw new Error(errorMessage);
   }
@@ -152,7 +160,11 @@ export function isValidMidtransSignature(payload: MidtransNotificationPayload) {
   return expectedSignature === payload.signature_key;
 }
 
-export function buildMidtransCustomerDetails(fullName: string | null, email: string, phone?: string | null) {
+export function buildMidtransCustomerDetails(
+  fullName: string | null,
+  email: string,
+  phone?: string | null,
+) {
   const { firstName, lastName } = splitName(fullName ?? "");
 
   return {
@@ -161,4 +173,25 @@ export function buildMidtransCustomerDetails(fullName: string | null, email: str
     email,
     phone,
   };
+}
+
+export function canResumeSnapPayment(payment: {
+  status: string;
+  redirect_url: string | null;
+  created_at?: string | null;
+} | null) {
+  if (!payment || payment.status !== "pending" || !payment.redirect_url) {
+    return false;
+  }
+
+  if (!payment.created_at) {
+    return false;
+  }
+
+  const createdAt = new Date(payment.created_at).getTime();
+  if (Number.isNaN(createdAt)) {
+    return false;
+  }
+
+  return Date.now() - createdAt < MIDTRANS_SNAP_RESUME_WINDOW_MS;
 }

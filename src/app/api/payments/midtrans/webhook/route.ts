@@ -2,6 +2,11 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import {
+  buildBookingConfirmationEmail,
+  sendAppEmail,
+} from "@/infrastructure/email/sendEmail";
+import { getConfiguredAppOrigin } from "@/infrastructure/http/requestOrigin";
+import {
   type MidtransNotificationPayload,
   isValidMidtransSignature,
 } from "@/infrastructure/midtrans/service";
@@ -99,6 +104,58 @@ function getWebhookTimestamp(transactionTime: string | undefined) {
   return parsedDate.toISOString();
 }
 
+async function sendBookingConfirmedEmail(bookingId: string) {
+  const supabase = getSupabaseAdminClient();
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select(
+      "id, start_at, end_at, customer:profiles!customer_id(full_name, email), worker:workers(name), service:services(name)",
+    )
+    .eq("id", bookingId)
+    .maybeSingle<{
+      id: string;
+      start_at: string;
+      end_at: string;
+      customer:
+        | { full_name: string | null; email: string | null }
+        | { full_name: string | null; email: string | null }[]
+        | null;
+      worker: { name: string } | { name: string }[] | null;
+      service: { name: string } | { name: string }[] | null;
+    }>();
+
+  if (!booking) {
+    return;
+  }
+
+  const customer = Array.isArray(booking.customer) ? booking.customer[0] : booking.customer;
+  const worker = Array.isArray(booking.worker) ? booking.worker[0] : booking.worker;
+  const service = Array.isArray(booking.service) ? booking.service[0] : booking.service;
+  const email = customer?.email;
+
+  if (!email || !service?.name) {
+    return;
+  }
+
+  const appOrigin = getConfiguredAppOrigin() ?? "http://localhost:3000";
+  const content = buildBookingConfirmationEmail({
+    customerName: customer?.full_name ?? null,
+    serviceName: service.name,
+    workerName: worker?.name ?? null,
+    startAt: booking.start_at,
+    endAt: booking.end_at,
+    myBookingsUrl: `${appOrigin}/my-bookings`,
+    calendarUrl: `${appOrigin}/api/bookings/${booking.id}/calendar`,
+  });
+
+  await sendAppEmail({
+    to: email,
+    subject: content.subject,
+    html: content.html,
+    text: content.text,
+  });
+}
+
 export async function POST(request: Request) {
   let payload: MidtransNotificationPayload;
 
@@ -108,7 +165,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  if (!payload.order_id || !payload.transaction_status || !payload.status_code || !payload.gross_amount) {
+  if (
+    !payload.order_id ||
+    !payload.transaction_status ||
+    !payload.status_code ||
+    !payload.gross_amount
+  ) {
     return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
   }
 
@@ -129,7 +191,11 @@ export async function POST(request: Request) {
   }
 
   const mappedStatus = mapMidtransStatus(payload.transaction_status, payload.fraud_status);
-  const shouldUpdatePayment = shouldApplyPaymentTransition(payment.status, mappedStatus.paymentStatus);
+  const shouldUpdatePayment = shouldApplyPaymentTransition(
+    payment.status,
+    mappedStatus.paymentStatus,
+  );
+  const becamePaid = mappedStatus.paymentStatus === "paid" && payment.status !== "paid";
 
   if (!shouldUpdatePayment) {
     return NextResponse.json({
@@ -162,10 +228,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "payment_update_failed" }, { status: 500 });
   }
 
+  // Flow baru: booking sudah 'completed' sebelum user bayar.
+  // Webhook paid hanya update payment_status; status booking tidak diregress ke 'confirmed'.
   const bookingPatch =
-    mappedStatus.bookingStatus === "confirmed"
+    mappedStatus.paymentStatus === "paid"
       ? {
-          status: "confirmed",
           payment_status: "paid",
           held_until: null,
         }
@@ -194,11 +261,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "booking_update_failed" }, { status: 500 });
   }
 
+  if (becamePaid) {
+    try {
+      await sendBookingConfirmedEmail(payment.booking_id);
+    } catch (error) {
+      console.error("Failed to send booking confirmation email", error);
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/availability");
   revalidatePath("/workers");
   revalidatePath("/book");
   revalidatePath("/my-bookings");
+  revalidatePath("/admin");
 
   return NextResponse.json({ received: true });
 }
