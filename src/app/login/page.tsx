@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { EmailSignInForm } from "@/components/auth/email-sign-in-form";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { LoginNotice } from "@/components/auth/login-notice";
+import { OAuthHashRecovery } from "@/components/auth/oauth-hash-recovery";
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 
@@ -33,13 +35,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <SiteShell>
       <div className="space-y-8">
+        <Suspense fallback={null}>
+          <OAuthHashRecovery />
+        </Suspense>
         <PageIntro
           eyebrow="Auth"
           title="Masuk dengan email atau Google untuk mulai memakai flow booking private."
           description="Semua akun harus memakai email yang terverifikasi. Untuk registrasi manual, Supabase akan mengirim link verifikasi ke inbox. Untuk Google, app hanya menerima akun dengan email provider yang sudah verified."
         />
 
-        <LoginNotice />
+        <Suspense fallback={null}>
+          <LoginNotice />
+        </Suspense>
 
         {params.verified === "1" ? (
           <StateCard
@@ -141,7 +148,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="space-y-4">
             <StateCard
               title="Redirect URL"
-              description="Tambahkan URL callback `http://localhost:3000/auth/callback` di provider Google dan pakai URL yang sama untuk email verification redirect."
+              description="Di Supabase Auth → URL Configuration, set Site URL ke domain publik (mis. ngrok) dan tambahkan Redirect URL `https://domain-anda/auth/callback`."
             />
             <StateCard
               title="Trigger profiles"

@@ -5,9 +5,10 @@ import { useSearchParams } from "next/navigation";
 const errorMessages: Record<string, string> = {
   oauth_start_failed:
     "URL login Google tidak berhasil dibuat. Periksa konfigurasi provider Google dan URL callback di Supabase.",
-  missing_code: "Callback Google tidak membawa authorization code. Coba ulangi login dari tombol Google.",
+  missing_code:
+    "Callback Google mengirim token di hash URL (bukan code). Pastikan Redirect URLs di Supabase berisi `https://domain-anda/auth/callback`, lalu ulangi login dari tombol Google.",
   oauth_callback_failed:
-    "Pertukaran code ke session gagal. Periksa URL callback di Google dan Supabase Auth.",
+    "Pertukaran code ke session gagal. Biasanya karena PKCE verifier hilang atau Redirect URL di Supabase belum cocok.",
   oauth_email_unverified:
     "Akun yang digunakan belum punya email terverifikasi dari provider. Gunakan akun dengan email yang sudah verified.",
   email_unverified:

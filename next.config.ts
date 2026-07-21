@@ -5,6 +5,12 @@ import { fileURLToPath } from "url";
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    "payback-laundry-thermal.ngrok-free.dev",
+    "*.ngrok-free.dev",
+    "*.ngrok-free.app",
+    "*.ngrok.io",
+  ],
   turbopack: {
     root: projectRoot,
   },
