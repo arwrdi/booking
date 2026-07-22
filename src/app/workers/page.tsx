@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
+import { WorkerCard } from "@/components/booking/worker-card";
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import {
   getPublicAvailabilitySlots,
   getPublicWorkers,
 } from "@/infrastructure/supabase/publicData";
+import { getSupabaseServerClient } from "@/infrastructure/supabase/serverClient";
 
 export const metadata: Metadata = {
-  title: "Workers",
-  description: "Daftar worker aktif untuk booking MVP.",
+  title: "Worker",
+  description: "Daftar worker aktif.",
 };
 
 export default async function WorkersPage() {
@@ -26,84 +29,62 @@ export default async function WorkersPage() {
       if (slot.worker) {
         counts[slot.worker.id] = (counts[slot.worker.id] ?? 0) + 1;
       }
-
       return counts;
     },
     {},
   );
 
+  const workerIds = workersResult.data.map((w) => w.id);
+  const supabase = await getSupabaseServerClient();
+  const { data: extras } =
+    workerIds.length > 0
+      ? await supabase.from("workers").select("id, bio, portfolio_urls").in("id", workerIds)
+      : { data: [] as { id: string; bio: string | null; portfolio_urls: string[] }[] };
+
+  const extraMap = new Map(
+    ((extras ?? []) as { id: string; bio: string | null; portfolio_urls: string[] }[]).map(
+      (w) => [w.id, w],
+    ),
+  );
+
   return (
     <SiteShell>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <PageIntro
-          eyebrow="Workers"
-          title="Daftar worker aktif beserta kapasitas slot yang sudah di-seed."
-          description="Ini membantu kamu menguji pemetaan worker ke availability sebelum nanti dipakai di step pilih worker dan pilih slot."
+          eyebrow="Worker"
+          title="Kenali worker kami"
+          description="Lihat profil dan portofolio, lalu booking dari halaman Booking."
+          actions={
+            <Link href="/book" className="btn-primary">
+              Mulai booking
+            </Link>
+          }
         />
 
         {warnings.length > 0 ? (
-          <StateCard
-            tone="warning"
-            title="Masih ada query yang belum ideal"
-            description={warnings.join(" ")}
-          />
+          <StateCard tone="warning" title="Data belum ideal" description={warnings.join(" ")} />
         ) : null}
 
         {workersResult.data.length > 0 ? (
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {workersResult.data.map((worker) => (
-              <article
-                key={worker.id}
-                className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
-                      Worker aktif
-                    </p>
-                    <h2 className="mt-2 text-xl font-semibold tracking-tight">
-                      {worker.name}
-                    </h2>
-                  </div>
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:text-emerald-300">
-                    Online
-                  </span>
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  {worker.specialization ?? "Spesialisasi belum diisi."}
-                </p>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {worker.services.map((service) => (
-                    <span
-                      key={`${worker.id}-${service.id}`}
-                      className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                    >
-                      {service.name}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-6 rounded-3xl bg-zinc-100 p-4 dark:bg-zinc-900">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
-                    Slot 7 hari ke depan
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold">
-                    {slotCountByWorker[worker.id] ?? 0}
-                  </p>
-                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    Bisa mengerjakan {worker.services.length} layanan
-                  </p>
-                </div>
-              </article>
-            ))}
+          <section className="grid grid-cols-2 gap-x-3 gap-y-2 sm:gap-x-4 md:grid-cols-3">
+            {workersResult.data.map((worker) => {
+              const extra = extraMap.get(worker.id);
+              return (
+                <WorkerCard
+                  key={worker.id}
+                  name={worker.name}
+                  specialization={worker.specialization}
+                  bio={extra?.bio}
+                  photoUrl={worker.photo_url}
+                  portfolioUrls={extra?.portfolio_urls ?? []}
+                  selectable={false}
+                  footerNote={`${slotCountByWorker[worker.id] ?? 0} slot`}
+                />
+              );
+            })}
           </section>
         ) : (
-          <StateCard
-            title="Belum ada worker aktif"
-            description="Isi tabel `workers` atau jalankan seed dummy agar halaman pemilihan worker bisa kamu uji."
-          />
+          <StateCard title="Belum ada worker" description="Isi tabel workers di Supabase." />
         )}
       </div>
     </SiteShell>

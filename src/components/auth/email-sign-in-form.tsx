@@ -42,7 +42,7 @@ export function EmailSignInForm({ nextPath }: EmailSignInFormProps) {
           autoComplete="email"
           required
           placeholder="nama@email.com"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+          className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
         />
       </label>
 
@@ -54,20 +54,20 @@ export function EmailSignInForm({ nextPath }: EmailSignInFormProps) {
           autoComplete="current-password"
           required
           placeholder="Masukkan password"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+          className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
         />
       </label>
 
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+        className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? "Memproses..." : "Masuk dengan Email"}
       </button>
 
       {formState.error ? (
-        <p className="text-sm text-rose-600 dark:text-rose-400">{formState.error}</p>
+        <p className="text-sm text-danger-text">{formState.error}</p>
       ) : null}
     </form>
   );

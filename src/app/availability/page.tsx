@@ -5,8 +5,8 @@ import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { getPublicAvailabilitySlots } from "@/infrastructure/supabase/publicData";
 
 export const metadata: Metadata = {
-  title: "Availability",
-  description: "Slot ketersediaan worker untuk booking MVP.",
+  title: "Jadwal",
+  description: "Slot ketersediaan worker.",
 };
 
 function formatDayLabel(value: string) {
@@ -14,18 +14,16 @@ function formatDayLabel(value: string) {
     weekday: "long",
     day: "numeric",
     month: "long",
-    year: "numeric",
   });
 }
 
 function formatTimeRange(startAt: string, endAt: string) {
   const start = new Date(startAt);
   const end = new Date(endAt);
-
   return `${start.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
-  })} - ${end.toLocaleTimeString("id-ID", {
+  })} – ${end.toLocaleTimeString("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
   })}`;
@@ -40,93 +38,58 @@ export default async function AvailabilityPage() {
     return groups;
   }, {});
 
-  const dayKeys = Object.keys(groupedSlots).sort((left, right) =>
-    left.localeCompare(right),
-  );
+  const dayKeys = Object.keys(groupedSlots).sort((a, b) => a.localeCompare(b));
 
   return (
     <SiteShell>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <PageIntro
-          eyebrow="Availability"
-          title="Slot ketersediaan publik yang siap dipakai untuk step pilih waktu."
-          description="Untuk saat ini slot masih bersifat read-only. Nanti setelah auth dan flow booking aktif, halaman ini bisa dipecah menjadi selector per worker atau per service."
+          eyebrow="Jadwal"
+          title="Slot tersedia"
+          description="Lihat jadwal terdekat, lalu booking dari halaman Booking."
+          actions={
+            <Link href="/book" className="btn-primary">
+              Mulai booking
+            </Link>
+          }
         />
 
         {errorMessage ? (
-          <StateCard
-            tone="warning"
-            title="Slot belum bisa dimuat"
-            description={errorMessage}
-          />
+          <StateCard tone="warning" title="Gagal memuat" description={errorMessage} />
         ) : null}
 
         {dayKeys.length > 0 ? (
-          <section className="space-y-6">
+          <section className="space-y-4">
             {dayKeys.map((dayKey) => (
-              <div
-                key={dayKey}
-                className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
-                      Jadwal
-                    </p>
-                    <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                      {formatDayLabel(groupedSlots[dayKey][0].start_at)}
-                    </h2>
-                  </div>
-                  <div className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                    {groupedSlots[dayKey].length} slot
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div key={dayKey} className="surface-card rounded-[1.75rem] p-5">
+                <h2 className="font-display text-xl font-semibold">
+                  {formatDayLabel(groupedSlots[dayKey][0].start_at)}
+                </h2>
+                <div className="mt-3 space-y-2">
                   {groupedSlots[dayKey].map((slot) => (
-                    <article
+                    <div
                       key={slot.id}
-                      className="rounded-3xl border border-zinc-200 p-5 dark:border-zinc-800"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-surface px-3 py-3"
                     >
-                      <p className="text-sm font-semibold">
-                        {slot.worker?.name ?? "Worker tidak ditemukan"}
-                      </p>
-                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                        {slot.worker?.specialization ?? "Spesialisasi belum diisi"}
-                      </p>
-                      <p className="mt-4 text-base font-semibold">
-                        {formatTimeRange(slot.start_at, slot.end_at)}
-                      </p>
-                      <p className="mt-2 text-xs uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
-                        Tersedia
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {slot.services.map((service) => (
-                          <span
-                            key={`${slot.id}-${service.id}`}
-                            className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                          >
-                            {service.name}
-                          </span>
-                        ))}
+                      <div>
+                        <p className="text-sm font-semibold">
+                          {slot.worker?.name ?? "Worker"}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {formatTimeRange(slot.start_at, slot.end_at)}
+                        </p>
                       </div>
-                      <Link
-                        href={`/book?slotId=${slot.id}`}
-                        className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
-                      >
-                        Booking slot ini
+                      <Link href={`/book?slotId=${slot.id}`} className="btn-secondary h-9 px-3 text-xs">
+                        Pilih
                       </Link>
-                    </article>
+                    </div>
                   ))}
                 </div>
               </div>
             ))}
           </section>
         ) : (
-          <StateCard
-            title="Belum ada slot tersedia"
-            description="Jalankan seed dummy agar halaman ini menampilkan slot 7 hari ke depan."
-          />
+          <StateCard title="Belum ada slot" description="Seed data availability di Supabase." />
         )}
       </div>
     </SiteShell>

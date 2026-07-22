@@ -11,8 +11,8 @@ import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { buildVerifyEmailPath, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 
 export const metadata: Metadata = {
-  title: "Login",
-  description: "Masuk ke Booking MVP dengan email/password atau Google Auth via Supabase.",
+  title: "Masuk",
+  description: "Masuk ke Dyvara Beauty Studio.",
 };
 
 type LoginPageProps = {
@@ -34,14 +34,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <SiteShell>
-      <div className="space-y-8">
+      <div className="mx-auto w-full max-w-md space-y-6">
         <Suspense fallback={null}>
           <OAuthHashRecovery />
         </Suspense>
+
         <PageIntro
-          eyebrow="Auth"
-          title="Masuk dengan email atau Google untuk mulai memakai flow booking private."
-          description="Semua akun harus memakai email yang terverifikasi. Untuk registrasi manual, Supabase akan mengirim link verifikasi ke inbox. Untuk Google, app hanya menerima akun dengan email provider yang sudah verified."
+          hero
+          eyebrow="Masuk"
+          title="Selamat datang kembali"
+          description="Masuk dengan email atau Google untuk melanjutkan booking."
         />
 
         <Suspense fallback={null}>
@@ -50,116 +52,63 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {params.verified === "1" ? (
           <StateCard
-            title="Email berhasil diverifikasi"
-            description="Verifikasi email sudah selesai. Sekarang kamu bisa login dan lanjut ke flow booking."
+            tone="success"
+            title="Email terverifikasi"
+            description="Silakan masuk untuk lanjut booking."
           />
         ) : null}
 
         {params.password_reset === "1" ? (
           <StateCard
-            title="Password berhasil direset"
-            description="Password baru sudah tersimpan. Silakan login lagi dengan password yang baru."
+            tone="success"
+            title="Password diubah"
+            description="Masuk dengan password baru."
           />
         ) : null}
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-xl font-semibold tracking-tight">Masuk ke akun</h2>
-            <div className="mt-5 space-y-6">
-              <EmailSignInForm nextPath={nextPath} />
+        <section className="surface-card rounded-[1.75rem] p-5 sm:p-6">
+          <EmailSignInForm nextPath={nextPath} />
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase tracking-[0.2em] text-zinc-500">
-                  <span className="bg-white px-3 dark:bg-zinc-950">atau</span>
-                </div>
-              </div>
-
-              <GoogleSignInButton nextPath={nextPath} />
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
             </div>
+            <div className="relative flex justify-center text-xs uppercase tracking-[0.2em] text-muted">
+              <span className="bg-surface px-3">atau</span>
+            </div>
+          </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
-              <p>Belum punya akun?</p>
-              <Link
-                href="/register"
-                className="font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-50"
-              >
-                Buat akun baru
+          <GoogleSignInButton nextPath={nextPath} />
+
+          <div className="mt-5 space-y-2 text-center text-sm text-muted">
+            <p>
+              Belum punya akun?{" "}
+              <Link href="/register" className="font-semibold text-powder-strong">
+                Daftar
               </Link>
-              <span>atau</span>
+            </p>
+            <p>
+              <Link href="/forgot-password" className="font-medium text-powder-strong">
+                Lupa password?
+              </Link>
+              {" · "}
               <Link
                 href={buildVerifyEmailPath("", nextPath)}
-                className="font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-50"
+                className="font-medium text-powder-strong"
               >
-                kirim ulang email verifikasi
+                Kirim ulang verifikasi
               </Link>
-              <span>atau</span>
-              <Link
-                href="/forgot-password"
-                className="font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-50"
-              >
-                reset password
-              </Link>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <StateCard
-              title="Login manual"
-              description="User bisa masuk memakai email dan password setelah email pada akun tersebut diverifikasi."
-            />
-            <StateCard
-              title="Google tetap dicek"
-              description="Setelah OAuth selesai, app akan mengecek `email_confirmed_at`. Jika provider tidak mengirim email verified, session akan ditolak."
-            />
-            <StateCard
-              title="Setup Supabase"
-              description="Pastikan `Confirm email` aktif di Supabase Auth agar registrasi manual benar-benar mengirim link verifikasi."
-            />
+            </p>
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-xl font-semibold tracking-tight">Status login saat ini</h2>
-            <div className="mt-5 flex flex-wrap gap-3">
-              {user ? (
-                <>
-                  <div className="rounded-full bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:text-emerald-300">
-                    Sudah login sebagai {user.email ?? "user"}
-                  </div>
-                  <Link
-                    href="/"
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
-                  >
-                    Kembali ke home
-                  </Link>
-                </>
-              ) : (
-                <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  Belum ada session aktif. Login dengan salah satu metode di atas untuk lanjut ke halaman private.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <StateCard
-              title="Redirect URL"
-              description="Di Supabase Auth → URL Configuration, set Site URL ke domain publik (mis. ngrok) dan tambahkan Redirect URL `https://domain-anda/auth/callback`."
-            />
-            <StateCard
-              title="Trigger profiles"
-              description="Saat user baru dibuat lewat email/password atau Google, trigger `handle_new_user()` akan membuat baris `profiles` secara otomatis."
-            />
-            <StateCard
-              title="RLS setelah login"
-              description="Begitu session aktif dan email sudah verified, tabel `profiles` dan `bookings` bisa dibatasi per-user dengan `auth.uid()`."
-            />
-          </div>
-        </section>
+        {user ? (
+          <StateCard
+            tone="success"
+            title={`Sudah masuk sebagai ${user.email ?? "user"}`}
+            description="Kamu bisa langsung mulai booking."
+          />
+        ) : null}
       </div>
     </SiteShell>
   );

@@ -10,27 +10,23 @@ import { getPublicServices } from "@/infrastructure/supabase/publicData";
 import { createBooking } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Book",
-  description: "Buat booking pertama untuk user yang sudah login.",
+  title: "Booking",
+  description: "Buat booking baru.",
 };
 
 const errorMessages: Record<string, string> = {
-  missing_fields: "Pilih layanan dan slot terlebih dulu sebelum melanjutkan booking.",
-  profile_missing:
-    "Profil user belum ditemukan di tabel `profiles`. Pastikan trigger auth profile sudah dijalankan.",
-  service_missing: "Layanan yang dipilih tidak valid atau sudah tidak aktif.",
-  slot_missing: "Slot yang dipilih tidak ditemukan. Coba refresh daftar slot lalu pilih ulang.",
-  slot_unavailable: "Slot ini sudah tidak tersedia lagi.",
-  service_not_supported:
-    "Worker pada slot ini tidak mendukung layanan yang kamu pilih. Pilih kombinasi service dan slot yang sesuai.",
-  slot_invalid: "Data waktu pada slot tidak valid.",
-  slot_taken: "Slot baru saja diambil user lain. Pilih slot yang lain.",
-  relation_missing:
-    "Relasi worker dan service belum tersedia. Jalankan migration `005_worker_service_relations.sql` lalu seed ulang.",
-  insert_failed: "Booking gagal disimpan. Coba lagi sebentar lagi.",
-  booking_function_missing:
-    "Function booking atomik belum ada di database. Jalankan migration `007_booking_integrity_hardening.sql`.",
-  unauthorized: "Session login tidak valid. Coba login ulang lalu ulangi booking.",
+  missing_fields: "Pilih layanan dan slot dulu ya.",
+  profile_missing: "Profil belum siap. Coba login ulang.",
+  service_missing: "Layanan tidak valid atau tidak aktif.",
+  slot_missing: "Slot tidak ditemukan. Refresh lalu pilih ulang.",
+  slot_unavailable: "Slot sudah tidak tersedia.",
+  service_not_supported: "Worker ini tidak mendukung layanan tersebut.",
+  slot_invalid: "Data waktu slot tidak valid.",
+  slot_taken: "Slot baru saja diambil. Pilih yang lain.",
+  relation_missing: "Relasi worker–layanan belum siap di database.",
+  insert_failed: "Booking gagal disimpan. Coba lagi.",
+  booking_function_missing: "Function booking belum ada di database.",
+  unauthorized: "Session tidak valid. Login ulang.",
 };
 
 type BookPageProps = {
@@ -53,51 +49,37 @@ export default async function BookPage({ searchParams }: BookPageProps) {
   }
 
   const params = await searchParams;
-  const selectedServiceId = params.serviceId ?? "";
-  const selectedSlotId = params.slotId ?? "";
   const errorMessage = params.error ? errorMessages[params.error] : null;
-
   const servicesResult = await getPublicServices();
   const warnings = [servicesResult.errorMessage].filter(Boolean) as string[];
 
   return (
     <SiteShell>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <PageIntro
           eyebrow="Booking"
-          title="Buat booking baru"
-          description="Pilih layanan, lalu pilih worker beserta jadwalnya. Pembayaran dilakukan setelah layanan selesai."
+          title="Pesan dalam beberapa tap"
+          description="Layanan → worker → jadwal. Pembayaran setelah layanan selesai."
           actions={
-            <Link
-              href="/my-bookings"
-              className="inline-flex h-11 items-center justify-center rounded-full border border-zinc-200 bg-white px-5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
-            >
-              Lihat booking saya
+            <Link href="/my-bookings" className="btn-secondary">
+              Pesanan saya
             </Link>
           }
         />
 
         {errorMessage ? (
-          <StateCard
-            tone="warning"
-            title="Booking belum berhasil"
-            description={errorMessage}
-          />
+          <StateCard tone="warning" title="Belum berhasil" description={errorMessage} />
         ) : null}
 
         {warnings.length > 0 ? (
-          <StateCard
-            tone="warning"
-            title="Data booking belum lengkap"
-            description={warnings.join(" ")}
-          />
+          <StateCard tone="warning" title="Data belum lengkap" description={warnings.join(" ")} />
         ) : null}
 
         <form action={createBooking}>
           <BookingSelectionForm
             services={servicesResult.data}
-            selectedServiceId={selectedServiceId}
-            selectedSlotId={selectedSlotId}
+            selectedServiceId={params.serviceId ?? ""}
+            selectedSlotId={params.slotId ?? ""}
           />
         </form>
       </div>

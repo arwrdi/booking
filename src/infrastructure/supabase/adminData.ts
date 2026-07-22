@@ -14,7 +14,10 @@ type AdminBookingRow = {
   end_at: string;
   status: string;
   payment_status: string;
+  notes?: string | null;
   created_at: string;
+  worker_id?: string;
+  slot_id?: string | null;
   customer: JoinedCustomer;
   worker: JoinedName;
   service:
@@ -132,6 +135,8 @@ export type AdminBookingDetail = {
   payment_status: string;
   notes: string | null;
   created_at: string;
+  workerId: string | null;
+  slotId: string | null;
   customerName: string | null;
   customerEmail: string | null;
   workerName: string | null;
@@ -156,7 +161,7 @@ export async function getAdminBookingDetail(
     supabase
       .from("bookings")
       .select(
-        "id, booking_date, start_at, end_at, status, payment_status, notes, created_at, customer:profiles!customer_id(full_name, email), worker:workers(name), service:services(name)",
+        "id, booking_date, start_at, end_at, status, payment_status, notes, created_at, worker_id, slot_id, customer:profiles!customer_id(full_name, email), worker:workers(name), service:services(name)",
       )
       .eq("id", bookingId)
       .maybeSingle(),
@@ -187,6 +192,8 @@ export async function getAdminBookingDetail(
       payment_status: b.payment_status,
       notes: b.notes ?? null,
       created_at: b.created_at,
+      workerId: b.worker_id ?? null,
+      slotId: b.slot_id ?? null,
       customerName: customer?.full_name ?? null,
       customerEmail: (customer as { email?: string | null } | null)?.email ?? null,
       workerName: worker?.name ?? null,

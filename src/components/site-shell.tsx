@@ -8,13 +8,18 @@ import {
   getCurrentProfile,
 } from "@/infrastructure/supabase/auth";
 
-const navigation = [
+const desktopNav = [
   { href: "/", label: "Home" },
-  { href: "/services", label: "Services" },
-  { href: "/workers", label: "Workers" },
-  { href: "/availability", label: "Availability" },
-  { href: "/book", label: "Book" },
-  { href: "/my-bookings", label: "My Bookings" },
+  { href: "/services", label: "Layanan" },
+  { href: "/workers", label: "Worker" },
+  { href: "/book", label: "Booking" },
+  { href: "/my-bookings", label: "Pesanan" },
+];
+
+const mobileNav = [
+  { href: "/", label: "Home" },
+  { href: "/book", label: "Booking" },
+  { href: "/my-bookings", label: "Pesanan" },
 ];
 
 type SiteShellProps = {
@@ -26,12 +31,13 @@ type PageIntroProps = {
   title: string;
   description: string;
   actions?: ReactNode;
+  hero?: boolean;
 };
 
 type StateCardProps = {
   title: string;
   description: string;
-  tone?: "default" | "warning";
+  tone?: "default" | "warning" | "success";
 };
 
 export async function SiteShell({ children }: SiteShellProps) {
@@ -40,68 +46,92 @@ export async function SiteShell({ children }: SiteShellProps) {
     getCurrentProfile(),
   ]);
 
-  const navItems =
-    profile?.role === "admin"
-      ? [...navigation, { href: "/admin", label: "Admin" }]
-      : navigation;
+  const isAdmin = profile?.role === "admin";
+  const desktopItems = isAdmin
+    ? [...desktopNav, { href: "/admin", label: "Admin" }]
+    : desktopNav;
+  const bottomItems = user
+    ? isAdmin
+      ? [...mobileNav, { href: "/admin", label: "Admin" }]
+      : mobileNav
+    : [...mobileNav.slice(0, 2), { href: "/login", label: "Masuk" }];
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-950 dark:bg-black dark:text-zinc-50">
-      <header className="border-b border-zinc-200/80 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <Link href="/" className="text-sm font-semibold tracking-[0.18em] text-zinc-900 dark:text-zinc-50">
-            BOOKING MVP
+    <div className="flex min-h-screen flex-col text-foreground">
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/85 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <Link href="/" className="min-w-0">
+            <span className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Dyvara
+            </span>
+            <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-[0.2em] text-muted">
+              Beauty Studio
+            </span>
           </Link>
-          <div className="flex flex-col gap-3 lg:items-end">
-            <nav className="flex flex-wrap items-center justify-start gap-2 text-sm text-zinc-600 dark:text-zinc-300 lg:justify-end">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-full px-3 py-2 transition-colors hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-100 dark:hover:text-zinc-950"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {user ? (
-                <>
-                  <div className="rounded-full bg-zinc-100 px-4 py-2 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                    Login sebagai {user.email ?? "user"}
-                  </div>
-                  {!isEmailVerified ? (
-                    <Link
-                      href={buildVerifyEmailPath(user.email, "/")}
-                      className="inline-flex h-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100 dark:hover:bg-amber-950/50"
-                    >
-                      Email belum verified
-                    </Link>
-                  ) : null}
-                  <SignOutButton />
-                </>
-              ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
-                >
-                  Masuk / Register
-                </Link>
-              )}
-            </div>
+          <nav className="hidden items-center gap-1 lg:flex">
+            {desktopItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-full px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-lilac-soft hover:text-foreground"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                <span className="hidden max-w-[10rem] truncate rounded-full bg-lilac-soft px-3 py-1.5 text-xs font-medium text-foreground sm:inline">
+                  {user.email}
+                </span>
+                {!isEmailVerified ? (
+                  <Link
+                    href={buildVerifyEmailPath(user.email, "/")}
+                    className="hidden h-10 items-center rounded-full bg-warning px-3 text-xs font-semibold text-warning-text sm:inline-flex"
+                  >
+                    Verifikasi
+                  </Link>
+                ) : null}
+                <SignOutButton className="btn-secondary h-10 px-3 text-xs sm:text-sm" />
+              </>
+            ) : (
+              <Link href="/login" className="btn-primary hidden sm:inline-flex">
+                Masuk
+              </Link>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">{children}</main>
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 pb-28 sm:px-6 sm:py-10 lg:pb-10">
+        {children}
+      </main>
 
-      <footer className="border-t border-zinc-200 bg-white/70 dark:border-zinc-800 dark:bg-zinc-950/70">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-5 text-sm text-zinc-600 dark:text-zinc-400">
-          <p>Next.js + Supabase starter untuk booking flow MVP.</p>
-          <p>Email/password, Google Auth, dan verifikasi email sudah siap diuji.</p>
+      <footer className="hidden border-t border-border bg-surface/70 lg:block">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-5 text-sm text-muted">
+          <p>Dyvara — Beauty Studio</p>
+          <p>Booking layanan dengan worker pilihanmu.</p>
         </div>
       </footer>
+
+      {/* Mobile bottom nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+        <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 pt-1">
+          {bottomItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex min-h-14 min-w-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-2xl px-2 text-[11px] font-semibold text-muted transition-colors active:bg-lilac-soft active:text-foreground"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-powder-strong/80" aria-hidden />
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
@@ -111,20 +141,29 @@ export function PageIntro({
   title,
   description,
   actions,
+  hero = false,
 }: PageIntroProps) {
   return (
-    <section className="flex flex-col gap-6 rounded-[2rem] border border-zinc-200 bg-white px-6 py-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <section
+      className={
+        hero
+          ? "flex flex-col gap-5"
+          : "surface-card flex flex-col gap-5 rounded-[1.75rem] px-5 py-6 sm:rounded-[2rem] sm:px-6 sm:py-8"
+      }
+    >
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-600 dark:text-indigo-400">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-powder-strong">
           {eyebrow}
         </p>
         <div className="space-y-3">
-          <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1
+            className={`font-display font-semibold tracking-tight text-foreground ${
+              hero ? "max-w-xl text-4xl sm:text-5xl" : "max-w-3xl text-3xl sm:text-4xl"
+            }`}
+          >
             {title}
           </h1>
-          <p className="max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-400">
-            {description}
-          </p>
+          <p className="max-w-2xl text-base leading-7 text-muted">{description}</p>
         </div>
       </div>
       {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
@@ -139,13 +178,15 @@ export function StateCard({
 }: StateCardProps) {
   const classes =
     tone === "warning"
-      ? "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
-      : "border-zinc-200 bg-white text-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50";
+      ? "border-warning bg-warning/60 text-warning-text"
+      : tone === "success"
+        ? "border-success bg-success/50 text-success-text"
+        : "border-border bg-surface text-foreground";
 
   return (
-    <div className={`rounded-3xl border p-5 shadow-sm ${classes}`}>
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="mt-2 text-sm leading-6 opacity-80">{description}</p>
+    <div className={`rounded-3xl border p-5 shadow-[var(--shadow-soft)] ${classes}`}>
+      <h2 className="font-display text-lg font-semibold">{title}</h2>
+      {description ? <p className="mt-2 text-sm leading-6 opacity-90">{description}</p> : null}
     </div>
   );
 }

@@ -40,7 +40,22 @@ Gunakan urutan berikut untuk setup project awal:
    Membuat tabel `payments` untuk menyimpan order Midtrans, status pembayaran, payload
    transaksi, dan data webhook agar sinkron dengan status booking.
 
-11. `migrations/seed_dummy_data.sql`
+11. `migrations/011_invoice_items_pay_after_service.sql`
+   **Wajib** untuk flow pay-after-service. Membuat tabel `booking_invoice_items`, fungsi
+   admin `admin_add_booking_item` / `admin_mark_booking_completed` / `admin_cancel_booking`,
+   field portofolio worker (`bio`, `portfolio_urls`), dan revisi `create_my_booking`.
+   Tanpa file ini, halaman admin akan error: `Could not find the table 'public.booking_invoice_items'`.
+
+12. `migrations/012_admin_reschedule_and_remove_item.sql`
+   Menambah fungsi admin `admin_reschedule_booking` (ubah tanggal/slot) dan
+   `admin_remove_booking_item` (hapus item invoice).
+
+13. `migrations/013_admin_edit_while_in_progress.sql`
+   Admin boleh tambah/hapus item & ubah jadwal selama layanan masih dikerjakan
+   (`in_progress`) dan belum `paid`. Edit setelah `ready_to_pay` otomatis reopen ke
+   `in_progress` + `unbilled`.
+
+14. `migrations/seed_dummy_data.sql`
    Mengisi data dummy untuk `services`, `workers`, dan `availability_slots`.
 
 ## Verifikasi cepat
@@ -51,6 +66,7 @@ Setelah file dijalankan, cek query berikut:
 select count(*) as services_count from public.services;
 select count(*) as workers_count from public.workers;
 select count(*) as slots_count from public.availability_slots;
+select to_regclass('public.booking_invoice_items') as invoice_items_table;
 ```
 
 ## Catatan
@@ -61,11 +77,6 @@ select count(*) as slots_count from public.availability_slots;
   `services`, `workers`, dan `availability_slots`.
 - Untuk integrasi Midtrans sandbox, isi `MIDTRANS_SERVER_KEY` di `.env.local` lalu arahkan
   Notification URL Midtrans ke `[base-url]/api/payments/midtrans/webhook`.
-11. `migrations/011_invoice_items_pay_after_service.sql`
-   Mengubah flow ke pay-after-service: tabel `booking_invoice_items`, fungsi admin
-   `admin_add_booking_item`, `admin_mark_booking_completed`, `admin_cancel_booking`,
-   field portofolio worker (`bio`, `portfolio_urls`), dan revisi `create_my_booking`.
-
 - Untuk email konfirmasi setelah pembayaran sukses, isi `RESEND_API_KEY` dan `EMAIL_FROM`.
   Jika kosong, webhook tetap jalan dan email hanya di-skip.
 - Jadikan akun admin dengan SQL: `update public.profiles set role = 'admin' where email = 'you@example.com';`

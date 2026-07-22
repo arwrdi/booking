@@ -38,6 +38,68 @@ export async function addInvoiceItem(formData: FormData) {
   redirect(buildAdminRedirect(bookingId, "item_added"));
 }
 
+export async function removeInvoiceItem(formData: FormData) {
+  const admin = await getCurrentAdminProfile();
+  if (!admin) redirect("/");
+
+  const bookingId = (formData.get("bookingId") as string | null)?.trim() ?? "";
+  const itemId = (formData.get("itemId") as string | null)?.trim() ?? "";
+
+  if (!bookingId || !itemId) {
+    redirect(buildAdminRedirect(bookingId, "missing_fields"));
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("admin_remove_booking_item", {
+    target_item_id: itemId,
+  });
+
+  if (error) {
+    redirect(buildAdminRedirect(bookingId, error.message));
+  }
+
+  if (data === "item_removed" || data === "item_removed_empty") {
+    revalidatePath(`/admin/booking/${bookingId}`);
+    revalidatePath("/admin");
+    redirect(
+      buildAdminRedirect(
+        bookingId,
+        data === "item_removed_empty" ? "item_removed_empty" : "item_removed",
+      ),
+    );
+  }
+
+  redirect(buildAdminRedirect(bookingId, typeof data === "string" ? data : "remove_failed"));
+}
+
+export async function rescheduleBooking(formData: FormData) {
+  const admin = await getCurrentAdminProfile();
+  if (!admin) redirect("/");
+
+  const bookingId = (formData.get("bookingId") as string | null)?.trim() ?? "";
+  const slotId = (formData.get("slotId") as string | null)?.trim() ?? "";
+
+  if (!bookingId || !slotId) {
+    redirect(buildAdminRedirect(bookingId, "missing_fields"));
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { data, error } = await supabase.rpc("admin_reschedule_booking", {
+    target_booking_id: bookingId,
+    target_slot_id: slotId,
+  });
+
+  if (error || data !== "rescheduled") {
+    redirect(buildAdminRedirect(bookingId, error?.message ?? data ?? "reschedule_failed"));
+  }
+
+  revalidatePath(`/admin/booking/${bookingId}`);
+  revalidatePath("/admin");
+  revalidatePath("/book");
+  revalidatePath("/my-bookings");
+  redirect(buildAdminRedirect(bookingId, "rescheduled"));
+}
+
 export async function markBookingCompleted(formData: FormData) {
   const admin = await getCurrentAdminProfile();
   if (!admin) redirect("/");

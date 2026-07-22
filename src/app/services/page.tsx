@@ -5,8 +5,8 @@ import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { getPublicServices } from "@/infrastructure/supabase/publicData";
 
 export const metadata: Metadata = {
-  title: "Services",
-  description: "Katalog layanan publik untuk booking MVP.",
+  title: "Layanan",
+  description: "Katalog layanan.",
 };
 
 function formatCurrency(value: number) {
@@ -22,84 +22,42 @@ export default async function ServicesPage() {
 
   return (
     <SiteShell>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <PageIntro
-          eyebrow="Catalog"
-          title="Katalog layanan publik untuk langkah pertama booking."
-          description="Halaman ini sengaja dibuat tanpa auth agar kamu bisa langsung menguji data katalog, harga, durasi, dan kesiapan RLS publik."
+          eyebrow="Layanan"
+          title="Pilih layanan favoritmu"
+          description="Tap Booking untuk langsung mulai dengan layanan ini."
         />
 
         {errorMessage ? (
-          <StateCard
-            tone="warning"
-            title="Layanan belum bisa dimuat"
-            description={errorMessage}
-          />
+          <StateCard tone="warning" title="Gagal memuat" description={errorMessage} />
         ) : null}
 
         {services.length > 0 ? (
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((service) => (
-              <article
-                key={service.id}
-                className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">
-                      {service.category ?? "General"}
-                    </p>
-                    <h2 className="mt-2 text-xl font-semibold tracking-tight">
-                      {service.name}
-                    </h2>
-                  </div>
-                  <div className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                    {service.duration_minutes} menit
-                  </div>
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                  {service.description ?? "Deskripsi layanan belum diisi."}
+              <article key={service.id} className="surface-card flex flex-col rounded-[1.75rem] p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-powder-strong">
+                  {service.category ?? "Layanan"}
                 </p>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {service.workers.map((worker) => (
-                    <span
-                      key={`${service.id}-${worker.id}`}
-                      className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                    >
-                      {worker.name}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-6 flex items-center justify-between gap-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-                  <div>
-                    <p className="text-lg font-semibold">{formatCurrency(service.price)}</p>
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      Dikerjakan oleh {service.workers.length} worker
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:text-emerald-300">
-                      Aktif
-                    </span>
-                    <Link
-                      href={`/book?serviceId=${service.id}`}
-                      className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900"
-                    >
-                      Pesan
-                    </Link>
-                  </div>
+                <h2 className="mt-2 font-display text-xl font-semibold">{service.name}</h2>
+                <p className="mt-2 flex-1 text-sm leading-6 text-muted">
+                  {service.description ?? "Siap dibooking."}
+                </p>
+                <p className="mt-3 text-xs text-muted">{service.duration_minutes} menit</p>
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+                  <p className="font-semibold text-powder-strong">
+                    {formatCurrency(service.price)}
+                  </p>
+                  <Link href={`/book?serviceId=${service.id}`} className="btn-primary h-10 px-4 text-xs">
+                    Booking
+                  </Link>
                 </div>
               </article>
             ))}
           </section>
         ) : (
-          <StateCard
-            title="Belum ada data layanan"
-            description="Jalankan file seed dummy atau isi tabel `services` di Supabase agar katalog bisa tampil."
-          />
+          <StateCard title="Belum ada layanan" description="Isi tabel services di Supabase." />
         )}
       </div>
     </SiteShell>

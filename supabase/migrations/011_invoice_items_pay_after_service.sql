@@ -379,6 +379,7 @@ for select
 to anon, authenticated
 using (true);
 
--- 10. Availability slots: query per tanggal — tambah index
-create index if not exists idx_availability_slots_worker_date
-  on public.availability_slots (worker_id, (start_at::date));
+-- 10. Query per tanggal memakai index existing
+--    idx_availability_slots_worker_start (worker_id, start_at).
+--    Jangan buat index expression (start_at::date): cast timestamptz→date
+--    bergantung timezone session, jadi tidak IMMUTABLE (error 42P17).

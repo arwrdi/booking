@@ -91,7 +91,7 @@ export function EmailSignUpForm() {
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
           placeholder="Nama lengkap"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+          className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
         />
       </label>
 
@@ -104,7 +104,7 @@ export function EmailSignUpForm() {
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
           placeholder="08xxxxxxxxxx"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+          className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
         />
       </label>
 
@@ -117,7 +117,7 @@ export function EmailSignUpForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="nama@email.com"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+          className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
         />
       </label>
 
@@ -131,7 +131,7 @@ export function EmailSignUpForm() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Minimal 8 karakter"
-            className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+            className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
           />
         </label>
 
@@ -144,7 +144,7 @@ export function EmailSignUpForm() {
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             placeholder="Ulangi password"
-            className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+            className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
           />
         </label>
       </div>
@@ -152,17 +152,17 @@ export function EmailSignUpForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+        className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? "Mendaftarkan..." : "Buat akun baru"}
       </button>
 
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Setelah submit, sistem akan mengirim link verifikasi ke email kamu.
+      <p className="text-sm text-muted">
+        Setelah submit, link verifikasi dikirim ke email kamu.
       </p>
 
       {errorMessage ? (
-        <p className="text-sm text-rose-600 dark:text-rose-400">{errorMessage}</p>
+        <p className="text-sm text-danger-text">{errorMessage}</p>
       ) : null}
     </form>
   );

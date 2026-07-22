@@ -54,24 +54,24 @@ export function ForgotPasswordForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="nama@email.com"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600"
+          className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors focus:border-powder-strong"
         />
       </label>
 
       <button
         type="submit"
         disabled={isLoading}
-        className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+        className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? "Mengirim..." : "Kirim link reset password"}
       </button>
 
       {message ? (
-        <p className="text-sm text-emerald-600 dark:text-emerald-400">{message}</p>
+        <p className="text-sm text-success-text">{message}</p>
       ) : null}
 
       {errorMessage ? (
-        <p className="text-sm text-rose-600 dark:text-rose-400">{errorMessage}</p>
+        <p className="text-sm text-danger-text">{errorMessage}</p>
       ) : null}
     </form>
   );

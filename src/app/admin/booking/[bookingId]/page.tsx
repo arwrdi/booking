@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AdminRescheduleForm } from "@/components/admin/admin-reschedule-form";
 import { PageIntro, SiteShell, StateCard } from "@/components/site-shell";
 import { getCurrentAdminProfile, getCurrentAuthState } from "@/infrastructure/supabase/auth";
 import { getAdminBookingDetail } from "@/infrastructure/supabase/adminData";
 import { getPublicServices } from "@/infrastructure/supabase/publicData";
-import { addInvoiceItem, cancelBookingAdmin, markBookingCompleted } from "../../actions";
+import {
+  addInvoiceItem,
+  cancelBookingAdmin,
+  markBookingCompleted,
+  removeInvoiceItem,
+} from "../../actions";
 
 export const metadata: Metadata = {
   title: "Detail Booking – Admin",
@@ -37,11 +43,32 @@ type PageProps = {
 
 const resultMessages: Record<string, { tone: "success" | "warning"; text: string }> = {
   item_added: { tone: "success", text: "Layanan tambahan berhasil ditambahkan ke invoice." },
-  service_completed: { tone: "success", text: "Layanan ditandai selesai. Invoice siap dibayar oleh pelanggan." },
+  item_removed: { tone: "success", text: "Item invoice berhasil dihapus." },
+  item_removed_empty: {
+    tone: "warning",
+    text: "Item dihapus. Invoice sekarang kosong — tambahkan layanan sebelum menandai selesai.",
+  },
+  rescheduled: { tone: "success", text: "Jadwal booking berhasil diubah." },
+  service_completed: {
+    tone: "success",
+    text: "Layanan ditandai selesai. Invoice siap dibayar oleh pelanggan.",
+  },
   booking_cancelled: { tone: "warning", text: "Booking berhasil dibatalkan." },
   missing_fields: { tone: "warning", text: "Isi semua field sebelum mengirim." },
   booking_not_active: { tone: "warning", text: "Booking ini sudah tidak aktif." },
   no_invoice_items: { tone: "warning", text: "Tidak ada item invoice. Tambahkan layanan dulu." },
+  invoice_locked: {
+    tone: "warning",
+    text: "Invoice terkunci karena sudah dibayar.",
+  },
+  already_paid: {
+    tone: "warning",
+    text: "Booking sudah lunas. Perubahan layanan/jadwal tidak diizinkan.",
+  },
+  slot_unavailable: { tone: "warning", text: "Slot yang dipilih sudah tidak tersedia." },
+  slot_taken: { tone: "warning", text: "Slot sudah diambil booking lain." },
+  slot_wrong_worker: { tone: "warning", text: "Slot bukan milik worker booking ini." },
+  slot_missing: { tone: "warning", text: "Slot tidak ditemukan." },
 };
 
 export default async function AdminBookingDetailPage({ params, searchParams }: PageProps) {
@@ -59,8 +86,18 @@ export default async function AdminBookingDetailPage({ params, searchParams }: P
     getPublicServices(),
   ]);
 
-  const resultFeedback = result ? (resultMessages[result] ?? { tone: "warning" as const, text: result }) : null;
-  const isActive = booking && ["in_progress", "confirmed"].includes(booking.status);
+  const resultFeedback = result
+    ? (resultMessages[result] ?? { tone: "warning" as const, text: result })
+    : null;
+
+  // Admin bisa intervensi selama belum lunas: ubah layanan / jadwal saat worker masih kerja
+  const canManage =
+    Boolean(booking) &&
+    booking!.payment_status !== "paid" &&
+    !["cancelled", "expired", "no_show"].includes(booking!.status);
+  const canEditInvoice = canManage;
+  const showMarkCompleted =
+    canManage && booking!.payment_status !== "ready_to_pay";
 
   return (
     <SiteShell>
@@ -68,7 +105,7 @@ export default async function AdminBookingDetailPage({ params, searchParams }: P
         <PageIntro
           eyebrow="Admin › Detail Booking"
           title={booking ? `Booking ${booking.id.slice(0, 8)}…` : "Detail Booking"}
-          description="Kelola invoice dan status layanan untuk booking ini."
+          description="Kelola jadwal, invoice, dan status layanan untuk booking ini."
           actions={
             <a
               href="/admin"
@@ -91,7 +128,6 @@ export default async function AdminBookingDetailPage({ params, searchParams }: P
           <StateCard title="Booking tidak ditemukan" description="ID booking tidak valid." />
         ) : (
           <>
-            {/* Info booking */}
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
               <h2 className="text-xl font-semibold tracking-tight">Informasi Booking</h2>
               <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -145,7 +181,6 @@ export default async function AdminBookingDetailPage({ params, searchParams }: P
               </dl>
             </section>
 
-            {/* Invoice Items */}
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
               <h2 className="text-xl font-semibold tracking-tight">Invoice</h2>
               <div className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -162,7 +197,21 @@ export default async function AdminBookingDetailPage({ params, searchParams }: P
                         ) : null}
                       </p>
                     </div>
-                    <p className="font-semibold">{formatCurrency(item.price * item.qty)}</p>
+                    <div className="flex items-center gap-3">
+                      <p className="font-semibold">{formatCurrency(item.price * item.qty)}</p>
+                      {canEditInvoice ? (
+                        <form action={removeInvoiceItem}>
+                          <input type="hidden" name="bookingId" value={booking.id} />
+                          <input type="hidden" name="itemId" value={item.id} />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-rose-200 px-3 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 dark:border-rose-900/70 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                          >
+                            Hapus
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </div>
                 ))}
                 {booking.invoiceItems.length === 0 ? (
@@ -175,70 +224,91 @@ export default async function AdminBookingDetailPage({ params, searchParams }: P
               </div>
             </section>
 
-            {/* Admin Actions */}
-            {isActive ? (
+            {canManage ? (
               <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
                 <h2 className="text-xl font-semibold tracking-tight">Aksi Admin</h2>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Bisa dijalankan saat layanan masih dikerjakan. Jika user minta ubah layanan,
+                  admin langsung tambah/hapus item atau ubah jadwal tanpa menunggu tagihan.
+                </p>
 
-                {/* Tambah layanan */}
-                <div className="mt-5 rounded-3xl border border-zinc-100 p-4 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold">Tambah layanan ke invoice</h3>
-                  <form action={addInvoiceItem} className="mt-3 flex flex-wrap items-end gap-3">
-                    <input type="hidden" name="bookingId" value={booking.id} />
-                    <div>
-                      <label className="mb-1 block text-xs font-medium">Layanan</label>
-                      <select
-                        name="serviceId"
-                        required
-                        className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                {booking.workerId ? (
+                  <div className="mt-5">
+                    <AdminRescheduleForm
+                      bookingId={booking.id}
+                      workerId={booking.workerId}
+                      currentSlotId={booking.slotId}
+                      currentStartAt={booking.start_at}
+                    />
+                  </div>
+                ) : null}
+
+                {canEditInvoice ? (
+                  <div className="mt-4 rounded-3xl border border-zinc-100 p-4 dark:border-zinc-800">
+                    <h3 className="text-sm font-semibold">Tambah layanan ke invoice</h3>
+                    <form action={addInvoiceItem} className="mt-3 flex flex-wrap items-end gap-3">
+                      <input type="hidden" name="bookingId" value={booking.id} />
+                      <div>
+                        <label className="mb-1 block text-xs font-medium">Layanan</label>
+                        <select
+                          name="serviceId"
+                          required
+                          className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                        >
+                          <option value="">Pilih layanan…</option>
+                          {services.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} – {formatCurrency(s.price)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium">Qty</label>
+                        <input
+                          type="number"
+                          name="qty"
+                          defaultValue={1}
+                          min={1}
+                          max={99}
+                          className="w-20 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
                       >
-                        <option value="">Pilih layanan…</option>
-                        {services.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} – {formatCurrency(s.price)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium">Qty</label>
-                      <input
-                        type="number"
-                        name="qty"
-                        defaultValue={1}
-                        min={1}
-                        max={99}
-                        className="w-20 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
-                    >
-                      Tambah
-                    </button>
-                  </form>
-                </div>
+                        Tambah
+                      </button>
+                    </form>
+                  </div>
+                ) : null}
 
-                {/* Mark selesai */}
-                <div className="mt-4 rounded-3xl border border-zinc-100 p-4 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold">Tutup layanan & minta pembayaran</h3>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    Setelah diklik, status booking menjadi <strong>completed</strong> dan invoice
-                    dikirim ke pelanggan untuk dibayar.
-                  </p>
-                  <form action={markBookingCompleted} className="mt-3">
-                    <input type="hidden" name="bookingId" value={booking.id} />
-                    <button
-                      type="submit"
-                      className="inline-flex h-10 items-center justify-center rounded-full bg-emerald-600 px-5 text-sm font-medium text-white hover:bg-emerald-700"
-                    >
-                      Tandai Selesai & Tagih
-                    </button>
-                  </form>
-                </div>
+                {showMarkCompleted ? (
+                  <div className="mt-4 rounded-3xl border border-zinc-100 p-4 dark:border-zinc-800">
+                    <h3 className="text-sm font-semibold">Tutup layanan & minta pembayaran</h3>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Setelah diklik, status booking menjadi <strong>completed</strong> dan invoice
+                      dikirim ke pelanggan untuk dibayar.
+                    </p>
+                    <form action={markBookingCompleted} className="mt-3">
+                      <input type="hidden" name="bookingId" value={booking.id} />
+                      <button
+                        type="submit"
+                        className="inline-flex h-10 items-center justify-center rounded-full bg-emerald-600 px-5 text-sm font-medium text-white hover:bg-emerald-700"
+                      >
+                        Tandai Selesai & Tagih
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-3xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
+                    Invoice sudah <strong>ready_to_pay</strong>. Jika perlu ubah layanan lagi,
+                    tambah/hapus item di atas — status akan kembali ke <strong>in_progress</strong>{" "}
+                    lalu tagih ulang setelah selesai.
+                  </div>
+                )}
 
-                {/* Cancel */}
                 <div className="mt-4 rounded-3xl border border-red-100 p-4 dark:border-red-900/30">
                   <h3 className="text-sm font-semibold text-red-700 dark:text-red-400">
                     Batalkan booking

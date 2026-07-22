@@ -1,23 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Booking MVP",
-    template: "%s | Booking MVP",
+    default: "Dyvara",
+    template: "%s | Dyvara",
   },
-  description: "Prototype booking app dengan Next.js dan Supabase.",
+  description: "Dyvara Beauty Studio — booking layanan dengan worker pilihanmu.",
 };
 
 export default function RootLayout({
@@ -28,9 +30,15 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${fraunces.variable} h-full antialiased`}
+      style={{ backgroundColor: "#f5f0fa", colorScheme: "light" }}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body
+        className="flex min-h-full flex-col bg-[#f5f0fa] font-sans text-foreground"
+        style={{ backgroundColor: "#f5f0fa" }}
+      >
+        {children}
+      </body>
     </html>
   );
 }
