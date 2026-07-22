@@ -2,25 +2,32 @@
 
 :root {
   color-scheme: light;
-  /* Lilac + Powder Blue pastel */
-  --background: #f5f0fa;
-  --background-accent: #e8f0fa;
-  --foreground: #3d3550;
-  --surface: #fffbfe;
-  --surface-muted: #f3eef8;
-  --border: #e4dceb;
-  --muted: #7a718c;
-  --powder: #a8c5e8;
-  --powder-strong: #6b9bd1;
-  --lilac: #c9b6e4;
-  --lilac-soft: #ebe3f5;
-  --success: #b8e0d2;
+  /* Dyvara Beauty Studio — Rose / Blush palette */
+  --deep-plum: #3d2430;
+  --rose-mauve: #7a4258;
+  --dusty-rose: #a85c79;
+  --rose-gold: #c79a6b;
+  --blush: #fbeaf0;
+
+  --background: #fbeaf0;
+  --background-accent: #f7e0e8;
+  --foreground: #3d2430;
+  --surface: #fff8fb;
+  --surface-muted: #f7e0e8;
+  --border: #e8c9d4;
+  --muted: #a85c79;
+  /* Alias lama (powder/lilac) → rose palette agar class Tailwind tetap jalan */
+  --powder: #a85c79;
+  --powder-strong: #7a4258;
+  --lilac: #c79a6b;
+  --lilac-soft: #f5d6e2;
+  --success: #c8e6d5;
   --success-text: #2d6a5a;
-  --warning: #f5d9c8;
-  --warning-text: #8a4f2e;
+  --warning: #f5e0c8;
+  --warning-text: #8a5a2e;
   --danger: #f0c4c8;
   --danger-text: #8a3a42;
-  --shadow-soft: 0 10px 40px rgba(107, 155, 209, 0.12);
+  --shadow-soft: 0 10px 40px rgba(122, 66, 88, 0.12);
 }
 
 @theme inline {
@@ -34,6 +41,11 @@
   --color-powder-strong: var(--powder-strong);
   --color-lilac: var(--lilac);
   --color-lilac-soft: var(--lilac-soft);
+  --color-deep-plum: var(--deep-plum);
+  --color-rose-mauve: var(--rose-mauve);
+  --color-dusty-rose: var(--dusty-rose);
+  --color-rose-gold: var(--rose-gold);
+  --color-blush: var(--blush);
   --color-success: var(--success);
   --color-success-text: var(--success-text);
   --color-warning: var(--warning);
@@ -45,16 +57,16 @@
 }
 
 html {
-  background-color: #f5f0fa;
+  background-color: #fbeaf0;
   color-scheme: light;
 }
 
 body {
   background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, #e8f0fa 0%, transparent 55%),
-    radial-gradient(ellipse 70% 40% at 100% 0%, #ebe3f5 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 10% -10%, #f7e0e8 0%, transparent 55%),
+    radial-gradient(ellipse 70% 40% at 100% 0%, #f5d6e2 0%, transparent 50%),
     var(--background);
-  background-color: #f5f0fa;
+  background-color: #fbeaf0;
   color: var(--foreground);
   font-family: var(--font-dm-sans), system-ui, sans-serif;
   min-height: 100%;
@@ -74,7 +86,7 @@ h3,
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: var(--powder-strong);
+  background: var(--rose-mauve);
   padding-inline: 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
@@ -83,7 +95,7 @@ h3,
 }
 
 .btn-primary:hover {
-  background: #5a8bc0;
+  background: #5f3344;
 }
 
 .btn-primary:disabled {
@@ -114,4 +126,9 @@ h3,
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-soft);
+}
+
+.accent-line {
+  height: 1px;
+  background: var(--rose-gold);
 }

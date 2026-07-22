@@ -61,10 +61,10 @@ export async function SiteShell({ children }: SiteShellProps) {
       <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/85 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link href="/" className="min-w-0">
-            <span className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            <span className="font-display text-2xl font-semibold tracking-tight text-rose-mauve sm:text-3xl">
               Dyvara
             </span>
-            <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-[0.2em] text-muted">
+            <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-[0.2em] text-dusty-rose">
               Beauty Studio
             </span>
           </Link>

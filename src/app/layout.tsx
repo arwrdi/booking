@@ -31,11 +31,11 @@ export default function RootLayout({
     <html
       lang="id"
       className={`${dmSans.variable} ${fraunces.variable} h-full antialiased`}
-      style={{ backgroundColor: "#f5f0fa", colorScheme: "light" }}
+      style={{ backgroundColor: "#fbeaf0", colorScheme: "light" }}
     >
       <body
-        className="flex min-h-full flex-col bg-[#f5f0fa] font-sans text-foreground"
-        style={{ backgroundColor: "#f5f0fa" }}
+        className="flex min-h-full flex-col bg-[#fbeaf0] font-sans text-foreground"
+        style={{ backgroundColor: "#fbeaf0" }}
       >
         {children}
       </body>
