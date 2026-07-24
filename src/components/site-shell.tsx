@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { NavIcon, type NavIconName } from "@/components/nav-icon";
 import {
   buildVerifyEmailPath,
   getCurrentAuthState,
@@ -16,12 +17,11 @@ const desktopNav = [
   { href: "/my-bookings", label: "Pesanan" },
 ];
 
-const mobileNav = [
-  { href: "/", label: "Home" },
-  { href: "/book", label: "Booking" },
-  { href: "/my-bookings", label: "Pesanan" },
+const mobileNav: { href: string; label: string; icon: NavIconName }[] = [
+  { href: "/", label: "Home", icon: "home" },
+  { href: "/book", label: "Booking", icon: "book" },
+  { href: "/my-bookings", label: "Pesanan", icon: "orders" },
 ];
-
 type SiteShellProps = {
   children: ReactNode;
 };
@@ -50,11 +50,11 @@ export async function SiteShell({ children }: SiteShellProps) {
   const desktopItems = isAdmin
     ? [...desktopNav, { href: "/admin", label: "Admin" }]
     : desktopNav;
-  const bottomItems = user
+  const bottomItems: { href: string; label: string; icon: NavIconName }[] = user
     ? isAdmin
-      ? [...mobileNav, { href: "/admin", label: "Admin" }]
+      ? [...mobileNav, { href: "/admin", label: "Admin", icon: "admin" }]
       : mobileNav
-    : [...mobileNav.slice(0, 2), { href: "/login", label: "Masuk" }];
+    : [...mobileNav.slice(0, 2), { href: "/login", label: "Masuk", icon: "login" }];
 
   return (
     <div className="flex min-h-screen flex-col text-foreground">
@@ -124,9 +124,9 @@ export async function SiteShell({ children }: SiteShellProps) {
             <Link
               key={item.href}
               href={item.href}
-              className="flex min-h-14 min-w-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-2xl px-2 text-[11px] font-semibold text-muted transition-colors active:bg-lilac-soft active:text-foreground"
+              className="flex min-h-14 min-w-[4.5rem] flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-semibold text-muted transition-colors active:bg-lilac-soft active:text-rose-mauve"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-powder-strong/80" aria-hidden />
+              <NavIcon name={item.icon} className="h-5 w-5 text-rose-mauve" />
               {item.label}
             </Link>
           ))}
